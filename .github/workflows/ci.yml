@@ -14,10 +14,14 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install "discord.py>=2.4" pytest ruff pyright
+      - name: Install shellcheck
+        run: sudo apt-get install -y shellcheck
       - name: Lint
         run: ruff check .
+      - name: Shellcheck
+        run: shellcheck infra/cron/*.sh
       - name: Type check
-        run: pyright services/discord-bots/bots.py
+        run: pyright services/discord-bots/ tests/
       - name: Test
         run: pytest -q
       - name: Secret scan

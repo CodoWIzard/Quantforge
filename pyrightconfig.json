@@ -1,7 +1,8 @@
 {
   "venvPath": ".",
   "venv": ".venv",
-  "include": ["services", "packages", "research", "apps/api"],
+  "include": ["services", "packages", "research", "apps/api", "tests"],
+  "extraPaths": ["services/discord-bots"],
   "exclude": ["**/node_modules", "**/__pycache__", ".venv"],
   "typeCheckingMode": "standard"
 }
