@@ -1,0 +1,30 @@
+[Unit]
+Description=QuantForge Discord bots (Research Director + Admin)
+Documentation=file:///root/projects/quantforge/README.md
+After=network-online.target
+Wants=network-online.target
+
+# Crash-loop guard: these belong in [Unit], not [Service]
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+WorkingDirectory=/root/projects/quantforge
+ExecStart=/root/projects/quantforge/.venv/bin/python services/discord-bots/bots.py
+
+Restart=on-failure
+RestartSec=10
+
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=quantforge-bots
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target
