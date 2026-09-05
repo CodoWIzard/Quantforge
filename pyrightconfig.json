@@ -1,0 +1,7 @@
+{
+  "venvPath": ".",
+  "venv": ".venv",
+  "include": ["services", "packages", "research", "apps/api"],
+  "exclude": ["**/node_modules", "**/__pycache__", ".venv"],
+  "typeCheckingMode": "standard"
+}

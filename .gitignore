@@ -42,6 +42,7 @@ data/
 # Artifacts
 artifacts/
 runs/
+logs/
 *.log
 
 # OS / editor
