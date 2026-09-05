@@ -20,7 +20,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import os
 import re
 import shutil
 from pathlib import Path
@@ -124,7 +123,7 @@ async def ask_hermes(persona: str, question: str, who: str, channel: str) -> str
                 cwd=str(REPO),
             )
             out, err = await asyncio.wait_for(proc.communicate(), timeout=HERMES_TIMEOUT)
-        except asyncio.TimeoutError:
+        except TimeoutError:
             log.warning("hermes timeout")
             return "That took too long to think about. Try a narrower question."
         except Exception as exc:  # noqa: BLE001

@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install "discord.py>=2.4" pytest ruff pyright
+      - name: Lint
+        run: ruff check .
+      - name: Type check
+        run: pyright services/discord-bots/bots.py
+      - name: Test
+        run: pytest -q
+      - name: Secret scan
+        run: |
+          ! grep -rEn 'MTU[0-9A-Za-z._-]{50,}' --include='*.py' --include='*.md' . \
+            || (echo "::error::possible Discord token committed" && exit 1)
