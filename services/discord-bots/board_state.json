@@ -1,0 +1,79 @@
+{
+  "stage": "Stage 1 / Month 1 \u2014 Prove the Core Concept",
+  "goal": "Turn vague trading ideas into strict, schema-based StrategySpecs without inventing missing rules.",
+  "labels": [
+    "Prototype",
+    "High Priority",
+    "StrategySpec",
+    "Month 1"
+  ],
+  "due": "2026-09-08T17:00:00",
+  "week_start": "2026-09-07",
+  "done_when": "10-20 different BTC/ETH trading ideas become valid StrategySpec drafts, or clear clarification questions when rules are missing.",
+  "artifacts": [
+    "StrategySpec schema draft",
+    "Compiler prompt/instructions",
+    "Clarification question policy",
+    "10-20 example input/output fixtures"
+  ],
+  "sections": [
+    {
+      "name": "Build",
+      "items": [
+        {
+          "id": "B1",
+          "owner": "Jayden",
+          "done": false,
+          "text": "Define minimum StrategySpec fields: market, timeframe, direction, entry, exit, risk, assumptions"
+        },
+        {
+          "id": "B2",
+          "owner": "Jaedyn",
+          "done": false,
+          "text": "Draft 10-20 realistic BTC/ETH strategy ideas incl. vague and incomplete examples"
+        },
+        {
+          "id": "B3",
+          "owner": "Jayden",
+          "done": false,
+          "text": "Implement/document compiler path: natural language -> strict JSON/Pydantic output"
+        },
+        {
+          "id": "B4",
+          "owner": "Jaedyn",
+          "done": false,
+          "text": "Add clarification rules for missing breakout, volume, exit, timeframe, risk definitions"
+        },
+        {
+          "id": "B5",
+          "owner": "Both",
+          "done": false,
+          "text": "Confirm invalid/missing values become questions or errors, never invented defaults"
+        }
+      ]
+    },
+    {
+      "name": "Verify",
+      "items": [
+        {
+          "id": "V1",
+          "owner": "Jayden",
+          "done": false,
+          "text": "Test same input twice, compare schema consistency"
+        },
+        {
+          "id": "V2",
+          "owner": "Jaedyn",
+          "done": false,
+          "text": "Test impossible/unsafe requests, record expected rejection or clarification"
+        },
+        {
+          "id": "V3",
+          "owner": "Both",
+          "done": false,
+          "text": "Pick 3 demo examples showing vague idea -> structured StrategySpec"
+        }
+      ]
+    }
+  ]
+}
