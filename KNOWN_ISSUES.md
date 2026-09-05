@@ -1,0 +1,31 @@
+# QuantForge — known issues and open questions
+
+## Open questions (need a decision before the relevant phase)
+- Kraken demo/derivatives environment: confirm the exact demo account type available from
+  the Netherlands and whether it exposes the same order API surface as live.
+  (Note: Kraken EU derivatives is a separate account + separate API key from Kraken spot.)
+- Azure subscription: student credits vs paid? Determines PostgreSQL and Container Apps cost.
+- Which Foundry region/model deployments are actually available to the subscription.
+- Backtest engine: constrained internal Python engine first, or adopt LEAN early?
+  Blueprint says internal first; revisit if order semantics outgrow it.
+
+## Known risks carried from the blueprint
+| Risk | Mitigation |
+|---|---|
+| AI produces inconsistent StrategySpecs | Strict schema, clarification policy, eval fixtures, versioned prompts |
+| Backtest looks better than reality | Fees/funding/slippage, delay tests, out-of-sample, paper drift comparison |
+| Data gaps / corruption | Timestamp + sequence checks, raw provenance, fail closed, replay fixtures |
+| Scope explosion | BTC/ETH + one exchange + paper only; backlog everything else |
+| Cloud/AI cost creep | Budgets, cost ledger, model routing, finite jobs, no Managed Redis |
+| Agents overuse tools/secrets | Tool allowlists, Key Vault, least privilege, no exec tool for research agents |
+| Two AIOS environments diverge | Context files, ADRs, contracts, issues/PRs, cross-review |
+| Regulatory complexity blocks live launch | Internship stays paper-only; legal review before any live product |
+
+## Non-goals (do not build these)
+- No promise of profitable or superior trading performance
+- No HFT or millisecond execution claims
+- No multi-exchange / multi-asset-class support
+- No public real-money automated trading
+- No institutional market-data redistribution
+- No custom model training program
+- No Azure Managed Redis unless a benchmark proves a real bottleneck
