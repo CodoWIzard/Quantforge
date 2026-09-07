@@ -30,11 +30,6 @@ from packages.strategy_schema.errors import (
 )
 from packages.strategy_schema.models import (
     SUPPORTED_INDICATORS,
-    EntryBlock,
-    ExitBlock,
-    RiskPolicy,
-    Rule,
-    SpecMetadata,
     StrategySpec,
 )
 
@@ -102,9 +97,7 @@ def _triggers_exit(candidate: dict) -> bool:
         if qualitative:
             return True
         # must have at least one bounded exit
-        if not (ex.get("stop_loss_pct") or ex.get("max_holding_minutes")):
-            return True
-        return False
+        return not (ex.get("stop_loss_pct") or ex.get("max_holding_minutes"))
     # no exit block at all
     text = _text_of(candidate)
     return not bool(re.search(r"\bstop\b|\btarget\b|\bmax.hold\b", text))
@@ -129,11 +122,11 @@ def _triggers_indicator_params(candidate: dict) -> bool:
     """An indicator name appears without a period, or a threshold without its indicator."""
     text = _text_of(candidate)
     # Named indicators without an explicit number following them
-    for ind in ("rsi", "ema", "sma", "atr"):
-        # matches "rsi" not followed by a digit within a few chars
-        if re.search(rf"\b{ind}\b(?!\s*[\(\d])", text):
-            return True
-    return False
+    # matches e.g. "rsi" not followed by a period/paren -> period is unstated
+    return any(
+        re.search(rf"\b{ind}\b(?!\s*[\(\d])", text)
+        for ind in ("rsi", "ema", "sma", "atr")
+    )
 
 
 def _triggers_direction(candidate: dict) -> bool:
@@ -238,7 +231,6 @@ def compile_candidate(candidate: dict) -> StrategySpec:
         # Report the first unanswered question as a MissingParameterError so the
         # caller has a typed error, but include ALL questions in the message so the
         # UI can surface the full set in one pass (B4 rule).
-        first_q = questions[0]
         all_q_text = " | ".join(questions)
         raise MissingParameterError(
             field="<multiple>",

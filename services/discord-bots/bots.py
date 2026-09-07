@@ -19,6 +19,7 @@ Hard boundaries enforced here, not left to the model's goodwill:
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import re
 import shutil
@@ -30,11 +31,13 @@ from discord import app_commands
 # ---------------------------------------------------------------- config
 
 CFG = Path("/root/.config/quantforge")
-REPO = Path("/root/projects/quantforge")
+# Derived from this file's location so tests and CI resolve the repo they checked out,
+# not a path that only exists on the production host.
+REPO = Path(__file__).resolve().parents[2]
 LOGDIR = REPO / "logs"
 LOGDIR.mkdir(exist_ok=True)
 
-HERMES_TIMEOUT = 180
+HERMES_TIMEOUT = 420  # long pastes need headroom; Discord edits are cheap
 MAX_DISCORD = 1900
 
 
@@ -48,13 +51,27 @@ def load_env() -> dict[str, str]:
     return env
 
 
-ENV = load_env()
-GUILD_ID = int(ENV["DISCORD_GUILD_ID"])
+# Import must stay side-effect free: CI and the test-suite import this module to
+# check repo_facts() and the persona text, and they have neither the credentials
+# file nor a writable log directory. Missing config is only fatal in main().
+try:
+    ENV = load_env()
+    GUILD_ID = int(ENV["DISCORD_GUILD_ID"])
+except (OSError, KeyError, ValueError):
+    ENV = {}
+    GUILD_ID = 0
+
+_handlers: list[logging.Handler] = [logging.StreamHandler()]
+try:
+    LOGDIR.mkdir(parents=True, exist_ok=True)
+    _handlers.insert(0, logging.FileHandler(LOGDIR / "bots.log"))
+except OSError:
+    pass  # stream-only logging is fine for a test import
 
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s %(name)-18s %(levelname)-7s %(message)s",
-    handlers=[logging.FileHandler(LOGDIR / "bots.log"), logging.StreamHandler()],
+    handlers=_handlers,
 )
 log = logging.getLogger("quantforge")
 
@@ -79,10 +96,15 @@ def repo_facts() -> str:
                 "node_modules", "logs"}
         lines: list[str] = []
         for top in sorted(p for p in REPO.iterdir() if p.is_dir() and p.name not in skip):
-            subs = sorted(
-                c.name for c in top.iterdir()
-                if c.is_dir() and c.name not in skip
-            )[:12]
+            try:
+                subs = sorted(
+                    c.name for c in top.iterdir()
+                    if c.is_dir() and c.name not in skip
+                )[:12]
+            except OSError:
+                # Unreadable subdirectory (e.g. root-owned logs/ on a CI runner).
+                # Report the directory, skip its children - never abort the whole walk.
+                subs = []
             lines.append(f"  {top.name}/" + (f"  -> {', '.join(subs)}" if subs else ""))
         roots = sorted(
             p.name for p in REPO.iterdir()
@@ -95,16 +117,43 @@ def repo_facts() -> str:
         # does not exist either. Scaffolding-vs-research-vs-code are three states.
         art: list[str] = []
         for exp in sorted((REPO / "experiments").glob("0*")):
-            files = [p for p in exp.rglob("*.json")]
-            res = exp / "RESULT.md"
-            written = res.is_file() and len(res.read_text().splitlines()) > 40
+            try:
+                files = list(exp.rglob("*.json"))
+                res = exp / "RESULT.md"
+                written = res.is_file() and len(res.read_text().splitlines()) > 40
+            except OSError:
+                continue
             if files or written:
                 art.append(
                     f"    {exp.name}: {len(files)} fixture files, "
                     f"RESULT.md {'WRITTEN UP' if written else 'still a blank template'}"
                 )
-        artifacts = ("\n  RESEARCH ARTIFACTS THAT EXIST (files on disk, not plans):\n"
-                     + "\n".join(art)) if art else ""
+        artifacts = (
+            "  RESEARCH ARTIFACTS THAT EXIST (files on disk):\n" + "\n".join(art)
+        ) if art else ""
+
+        # Board task IDs (B1, B4, V2...) are how the humans refer to work in Discord.
+        # Without this the bot finds the right folder but cannot say which task it
+        # satisfied - it answered "I don't know what B2 B4 V2 refers to" while
+        # standing on the files.
+        board = ""
+        try:
+            board_path = REPO / "services" / "discord-bots" / "board_state.json"
+            bs = json.loads(board_path.read_text())
+            rows = [f"  BOARD - {bs['stage']} (due {bs['due'][:10]}):"]
+            for sec in bs["sections"]:
+                for it in sec["items"]:
+                    mark = "DONE" if it["done"] else "open"
+                    rows.append(f"    [{it['id']}] {mark:4} {it['owner']:6} {it['text']}")
+            rows.append(
+                "    Task IDs map to files: "
+                "B2 -> experiments/002-strategy-compiler/ideas/,"
+            )
+            rows.append("      B4 -> experiments/002-strategy-compiler/CLARIFICATION_RULES.md,")
+            rows.append("      V2 -> experiments/002-strategy-compiler/unsafe/")
+            board = "\n" + "\n".join(rows) + "\n"
+        except (OSError, KeyError, json.JSONDecodeError):
+            board = "\n  BOARD UNAVAILABLE - do not guess task IDs.\n"
 
         return (
             "ACTUAL REPOSITORY LAYOUT (read from disk just now - trust this over memory):\n"
@@ -114,6 +163,7 @@ def repo_facts() -> str:
             "  NOTE: there is no /engine/, /validation/, /paper/ or /docs/ADRs/ directory.\n"
             "  The deterministic core is packages/ + research/. Contracts are data-contracts/.\n"
             + artifacts
+            + board
             + "\n  THREE DISTINCT STATES - do not collapse them:\n"
             "    1. CODE THAT RUNS: tests/ and services/discord-bots/ only.\n"
             "    2. RESEARCH ARTIFACTS: written fixtures and rules listed above. These EXIST\n"
@@ -150,11 +200,21 @@ Absolute rules you must never break:
 - Paper/demo only. No real money this internship (ADR-002).
 - GitHub is the source of truth, not Discord (ADR-010).
 - Never reveal credentials, tokens or file contents of /root/.config.
+- YOU CANNOT WRITE, EDIT OR COMMIT CODE. You have no filesystem write access, no git
+  access and no ability to open a PR. You are a read-only advisor in a chat window.
+  When asked to "implement", "build", "execute" or "make" something, say plainly that
+  you cannot, then give the exact plan a human or coding agent should follow - files,
+  order, and how to verify. NEVER imply work is underway. NEVER say you will do it.
+  There is no background process; when this reply ends, nothing further happens.
 - NEVER describe repository structure, file paths, ADR numbers, PRs or shipped work
   from memory or inference. A prompt below contains the ACTUAL layout read from disk.
   Use ONLY that. If something is not listed there, it does not exist - say so.
   Inventing a plausible-sounding path is a serious failure: it sends people looking
   for files that were never written and fakes an audit trail.
+- You have NO memory of previous messages. Each question is a cold start. If someone
+  quotes something "you said", treat it as their accurate report - do not deny it and
+  do not pretend to recall it. Re-derive the answer from the facts below and continue
+  from where they say you left off.
 - Distinguish what EXISTS from what is PLANNED. Most of this repo is scaffolding:
   directories and documented contracts whose Python bodies still raise
   NotImplementedError. Never imply a component runs when only its shape is agreed.
@@ -191,6 +251,7 @@ async def ask_hermes(persona: str, question: str, who: str, channel: str) -> str
     prompt = (
         f"{persona}\n\n"
         f"{repo_facts()}\n"
+        f"NOTE: you cannot write files or run commands. Advise; do not claim to build.\n"
         f"Discord #{channel} | asked by {who}\n"
         f"Question: {question}\n\n"
         f"Reply with the message text only."
@@ -205,8 +266,13 @@ async def ask_hermes(persona: str, question: str, who: str, channel: str) -> str
             )
             out, err = await asyncio.wait_for(proc.communicate(), timeout=HERMES_TIMEOUT)
         except TimeoutError:
-            log.warning("hermes timeout")
-            return "That took too long to think about. Try a narrower question."
+            log.warning("hermes timeout after %ss", HERMES_TIMEOUT)
+            return (
+                f"I timed out after {HERMES_TIMEOUT // 60} minutes — that's my failure, "
+                "not a problem with your question. Nothing was written or changed; I have "
+                "no memory of this attempt, so re-send and I'll start clean. If it was a "
+                "long paste, sending just the specific ask usually gets through."
+            )
         except Exception as exc:  # noqa: BLE001
             log.exception("hermes failed")
             return f"Backend error: {type(exc).__name__}"
@@ -296,6 +362,18 @@ class QFBot(discord.Client):
 
 
 async def main() -> None:
+    # Import tolerates missing config so tests can import this module; actually
+    # RUNNING without it must fail loudly rather than start a crippled bot.
+    missing = [
+        k for k in ("DISCORD_GUILD_ID", "DISCORD_RESEARCH_DIRECTOR_TOKEN",
+                    "DISCORD_ADMIN_BOT_TOKEN")
+        if k not in ENV
+    ]
+    if missing:
+        raise SystemExit(
+            f"missing required config in {CFG / 'discord.env'}: {', '.join(missing)}"
+        )
+
     bots = [
         (QFBot("director", DIRECTOR), ENV["DISCORD_RESEARCH_DIRECTOR_TOKEN"]),
         (QFBot("admin", ADMIN), ENV["DISCORD_ADMIN_BOT_TOKEN"]),

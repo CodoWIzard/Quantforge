@@ -121,6 +121,67 @@ def test_current_state_records_the_completed_research():
         assert token in text, f"CURRENT_STATE.md does not mention {token}"
 
 
+def test_facts_include_board_task_ids():
+    """B2/B4/V2 are how humans refer to work in Discord.
+
+    Without the board the bot found the right folder but said "I don't know what
+    B2 B4 V2 refers to" while standing on the files.
+    """
+    facts = bots.repo_facts()
+    assert "BOARD" in facts
+    for task in ("[B1]", "[B2]", "[B3]", "[B4]", "[V1]", "[V2]", "[V3]"):
+        assert task in facts, f"board task {task} missing from facts"
+
+
+def test_facts_map_task_ids_to_files():
+    facts = bots.repo_facts()
+    assert "Task IDs map to files" in facts
+    assert "ideas/" in facts and "CLARIFICATION_RULES.md" in facts
+
+
+def test_facts_show_done_status():
+    """Done vs open must come from the board, not from the model's impression."""
+    facts = bots.repo_facts()
+    assert "DONE" in facts and "open" in facts
+
+
+def test_board_failure_is_announced_not_silent(monkeypatch, tmp_path):
+    """A missing board must forbid guessing, not vanish from the prompt."""
+    monkeypatch.setattr(bots, "REPO", tmp_path)
+    (tmp_path / "docs" / "decisions").mkdir(parents=True)
+    (tmp_path / "experiments").mkdir()
+    facts = bots.repo_facts()
+    assert "BOARD UNAVAILABLE" in facts or "UNAVAILABLE" in facts
+
+
+def test_persona_states_the_bot_cannot_write_code():
+    """The bot was asked to implement B3 and stalled 3 minutes instead of refusing.
+
+    It has no filesystem write access, no git, no PR ability - it shells out to a
+    read-only CLI call and returns text. Saying so is the only honest answer.
+    """
+    text = (BOTS_DIR / "bots.py").read_text()
+    assert "CANNOT WRITE, EDIT OR COMMIT CODE" in text
+    assert "NEVER imply work is underway" in text
+
+
+def test_persona_admits_no_conversation_memory():
+    """Each message is a cold start. Denying a quoted earlier answer confuses users."""
+    text = (BOTS_DIR / "bots.py").read_text()
+    assert "NO memory of previous messages" in text
+
+
+def test_timeout_message_blames_the_bot_not_the_user():
+    """'Try a narrower question' told Jayden his question was the problem. It wasn't."""
+    text = (BOTS_DIR / "bots.py").read_text()
+    assert "my failure" in text
+    assert "Try a narrower question." not in text
+
+
+def test_timeout_has_headroom_for_long_pastes():
+    assert bots.HERMES_TIMEOUT >= 300, "180s was not enough for a 9KB brief"
+
+
 def test_no_duplicate_hyphen_and_underscore_packages():
     """Python cannot import a hyphenated module; empty twins confuse the layout."""
     pkgs = {p.name for p in (REPO / "packages").iterdir() if p.is_dir()}
