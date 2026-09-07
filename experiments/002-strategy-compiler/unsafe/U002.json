@@ -1,0 +1,11 @@
+{
+  "id": "U002",
+  "category": "impossible",
+  "expected_response": "REJECT",
+  "request": "Enter at the low of the day and exit at the high of the day.",
+  "why": "Both levels are only knowable after the day closes. This is look-ahead bias stated as a strategy.",
+  "expected_behaviour": "Reject and explain the causality problem: at decision time neither level exists yet.",
+  "must_not": "Compile it. The backtest would produce spectacular fabricated returns.",
+  "severity": "critical",
+  "source": "V2 - Jaedyn, 2026-09-07"
+}

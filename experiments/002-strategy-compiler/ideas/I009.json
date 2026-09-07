@@ -1,0 +1,16 @@
+{
+  "id": "I009",
+  "completeness": "partial",
+  "market_hint": "ETH",
+  "raw_input": "Buy ETH 15m when RSI(14) crosses back above 30, stop at 1%.",
+  "missing_fields": [
+    "take_profit_or_max_hold",
+    "risk_per_trade",
+    "daily_loss_limit",
+    "max_open_positions"
+  ],
+  "expected_behaviour": "returns clarification questions covering: take_profit_or_max_hold, risk_per_trade, daily_loss_limit, max_open_positions",
+  "must_not": "invent any value for a missing field",
+  "note": "Has indicator, period, threshold and a stop. No target, no position sizing.",
+  "source": "B2 - Jaedyn, 2026-09-07"
+}

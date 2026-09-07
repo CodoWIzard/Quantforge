@@ -1,0 +1,18 @@
+{
+  "id": "I006",
+  "completeness": "vague",
+  "market_hint": "BTC",
+  "raw_input": "Buy the dip on BTC.",
+  "missing_fields": [
+    "dip_magnitude",
+    "dip_reference",
+    "timeframe",
+    "entry_timing",
+    "exit",
+    "risk"
+  ],
+  "expected_behaviour": "returns clarification questions covering: dip_magnitude, dip_reference, timeframe, entry_timing, exit, risk",
+  "must_not": "invent any value for a missing field",
+  "note": "How big a dip, measured from what reference over what window?",
+  "source": "B2 - Jaedyn, 2026-09-07"
+}

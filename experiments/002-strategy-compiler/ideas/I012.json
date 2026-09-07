@@ -1,0 +1,15 @@
+{
+  "id": "I012",
+  "completeness": "partial",
+  "market_hint": "BTC",
+  "raw_input": "Mean-revert BTC 5m: enter when price is 2 standard deviations below the 20-period mean, exit at the mean.",
+  "missing_fields": [
+    "stop_loss",
+    "max_holding",
+    "risk"
+  ],
+  "expected_behaviour": "returns clarification questions covering: stop_loss, max_holding, risk",
+  "must_not": "invent any value for a missing field",
+  "note": "Entry and target defined. No stop at all - unbounded downside, cannot be approved.",
+  "source": "B2 - Jaedyn, 2026-09-07"
+}

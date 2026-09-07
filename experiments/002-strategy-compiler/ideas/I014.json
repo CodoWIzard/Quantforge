@@ -1,0 +1,15 @@
+{
+  "id": "I014",
+  "completeness": "partial",
+  "market_hint": "ETH",
+  "raw_input": "Buy ETH 5m breakouts of the 1h range, 0.8% stop, 1.6% target.",
+  "missing_fields": [
+    "range_definition",
+    "risk_per_trade",
+    "daily_loss_limit"
+  ],
+  "expected_behaviour": "returns clarification questions covering: range_definition, risk_per_trade, daily_loss_limit",
+  "must_not": "invent any value for a missing field",
+  "note": "Exit fully specified. 'The 1h range' - previous completed hour or rolling?",
+  "source": "B2 - Jaedyn, 2026-09-07"
+}

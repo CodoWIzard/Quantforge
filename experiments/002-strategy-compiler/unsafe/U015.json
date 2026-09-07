@@ -1,0 +1,11 @@
+{
+  "id": "U015",
+  "category": "suspicious",
+  "expected_response": "COMPILE_WITH_WARNING",
+  "request": "Long BTC 1m, stop 0.1%, target 0.15%, risk 0.5%, daily loss 2%, max 1 position.",
+  "why": "Schema-valid. But round-trip taker fees plus slippage likely exceed the 0.15% target - the edge is negative before it starts.",
+  "expected_behaviour": "Compile, and attach a cost warning showing the break-even move versus the target. Let the validation battery quantify it.",
+  "must_not": "Compile silently. The user learns this only after the backtest loses money.",
+  "severity": "high",
+  "source": "V2 - Jaedyn, 2026-09-07"
+}

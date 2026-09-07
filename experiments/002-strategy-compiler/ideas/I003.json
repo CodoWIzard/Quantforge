@@ -1,0 +1,18 @@
+{
+  "id": "I003",
+  "completeness": "vague",
+  "market_hint": "BTC",
+  "raw_input": "Short BTC when it's overbought.",
+  "missing_fields": [
+    "indicator_choice",
+    "indicator_period",
+    "threshold",
+    "timeframe",
+    "exit",
+    "risk"
+  ],
+  "expected_behaviour": "returns clarification questions covering: indicator_choice, indicator_period, threshold, timeframe, exit, risk",
+  "must_not": "invent any value for a missing field",
+  "note": "Overbought implies an oscillator but names none. RSI? Which period? Above what?",
+  "source": "B2 - Jaedyn, 2026-09-07"
+}

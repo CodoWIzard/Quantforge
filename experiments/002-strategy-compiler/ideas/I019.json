@@ -1,0 +1,11 @@
+{
+  "id": "I019",
+  "completeness": "edge",
+  "market_hint": "ETH",
+  "raw_input": "Long ETH 15m when rsi(14) < 30. Stop 1%, max hold 10080 minutes. Risk 0.5%, daily loss 1.5%, max 1 position.",
+  "missing_fields": [],
+  "expected_behaviour": "compiles to a valid StrategySpec with no questions",
+  "must_not": "invent any value for a missing field",
+  "note": "Max hold is 7 days on a 15m intraday strategy - inconsistent with the stated scope.",
+  "source": "B2 - Jaedyn, 2026-09-07"
+}

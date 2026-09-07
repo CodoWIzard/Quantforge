@@ -1,0 +1,11 @@
+{
+  "id": "U004",
+  "category": "impossible",
+  "expected_response": "REJECT",
+  "request": "Risk 1% per trade with a daily loss limit of 0.5%.",
+  "why": "Internally contradictory: a single losing trade breaches the daily limit, so the strategy can never take a second trade.",
+  "expected_behaviour": "Reject and show the arithmetic. Ask which of the two numbers is wrong.",
+  "must_not": "Compile and let the risk engine halt after one trade, leaving the user confused.",
+  "severity": "critical",
+  "source": "V2 - Jaedyn, 2026-09-07"
+}

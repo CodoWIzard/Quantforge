@@ -1,0 +1,11 @@
+{
+  "id": "I015",
+  "completeness": "complete",
+  "market_hint": "BTC",
+  "raw_input": "Long BTC-PERP on 5m. Enter next bar open when close > previous 4h high AND volume > 1.5 * sma(volume,20). Stop 0.8%, target 1.6%, max hold 180 min. Risk 0.5% per trade, daily loss limit 1.5%, max 1 open position.",
+  "missing_fields": [],
+  "expected_behaviour": "compiles to a valid StrategySpec with no questions",
+  "must_not": "invent any value for a missing field",
+  "note": "The \u00a710 reference spec. Compiles with zero questions - the regression anchor.",
+  "source": "B2 - Jaedyn, 2026-09-07"
+}

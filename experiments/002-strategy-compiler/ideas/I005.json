@@ -1,0 +1,18 @@
+{
+  "id": "I005",
+  "completeness": "vague",
+  "market_hint": "ETH",
+  "raw_input": "Follow the trend on ETH, cut losers fast, let winners run.",
+  "missing_fields": [
+    "trend_definition",
+    "timeframe",
+    "entry_timing",
+    "stop_distance",
+    "exit",
+    "risk"
+  ],
+  "expected_behaviour": "returns clarification questions covering: trend_definition, timeframe, entry_timing, stop_distance, exit, risk",
+  "must_not": "invent any value for a missing field",
+  "note": "Trading proverbs, not rules. Every clause needs a number.",
+  "source": "B2 - Jaedyn, 2026-09-07"
+}

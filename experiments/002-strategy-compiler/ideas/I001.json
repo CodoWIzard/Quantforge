@@ -1,0 +1,17 @@
+{
+  "id": "I001",
+  "completeness": "vague",
+  "market_hint": "BTC",
+  "raw_input": "BTC pumps after it breaks the daily high, I want to catch that.",
+  "missing_fields": [
+    "breakout_definition",
+    "timeframe",
+    "entry_timing",
+    "exit",
+    "risk"
+  ],
+  "expected_behaviour": "returns clarification questions covering: breakout_definition, timeframe, entry_timing, exit, risk",
+  "must_not": "invent any value for a missing field",
+  "note": "Which daily high - previous UTC day, rolling 24h? Confirmed close or intrabar touch?",
+  "source": "B2 - Jaedyn, 2026-09-07"
+}

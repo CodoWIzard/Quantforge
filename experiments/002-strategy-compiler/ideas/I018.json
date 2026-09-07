@@ -1,0 +1,11 @@
+{
+  "id": "I018",
+  "completeness": "edge",
+  "market_hint": "BTC",
+  "raw_input": "Long BTC 5m when close > sma(close,20). Stop 5%, target 0.2%. Risk 0.5%, daily loss 2%, max 1 position.",
+  "missing_fields": [],
+  "expected_behaviour": "compiles to a valid StrategySpec with no questions",
+  "must_not": "invent any value for a missing field",
+  "note": "Compiles. Risk:reward is 25:1 against - high win rate, catastrophic tail. Flag, don't reject.",
+  "source": "B2 - Jaedyn, 2026-09-07"
+}

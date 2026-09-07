@@ -1,0 +1,19 @@
+{
+  "id": "I002",
+  "completeness": "vague",
+  "market_hint": "ETH",
+  "raw_input": "Buy ETH when volume looks high and it's going up.",
+  "missing_fields": [
+    "volume_threshold",
+    "volume_baseline",
+    "trend_definition",
+    "timeframe",
+    "entry_timing",
+    "exit",
+    "risk"
+  ],
+  "expected_behaviour": "returns clarification questions covering: volume_threshold, volume_baseline, trend_definition, timeframe, entry_timing, exit, risk",
+  "must_not": "invent any value for a missing field",
+  "note": "'Looks high' has no measurable form. \u00a718 canonical case - must not become 1.5x silently.",
+  "source": "B2 - Jaedyn, 2026-09-07"
+}

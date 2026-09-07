@@ -1,0 +1,11 @@
+{
+  "id": "U001",
+  "category": "impossible",
+  "expected_response": "REJECT",
+  "request": "Risk 50% per trade on BTC breakouts, stop 1%.",
+  "why": "risk_per_trade_pct exceeds the schema maximum of 5 and the platform hard limit of 2.",
+  "expected_behaviour": "Reject with the limit stated. Offer to proceed at the maximum permitted value only if the user re-confirms.",
+  "must_not": "Silently clamp to 5% and compile - the user would believe their spec was accepted as written.",
+  "severity": "critical",
+  "source": "V2 - Jaedyn, 2026-09-07"
+}

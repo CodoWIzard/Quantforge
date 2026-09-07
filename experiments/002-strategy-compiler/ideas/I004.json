@@ -1,0 +1,18 @@
+{
+  "id": "I004",
+  "completeness": "vague",
+  "market_hint": "unspecified",
+  "raw_input": "Trade the breakout with tight stops.",
+  "missing_fields": [
+    "market",
+    "breakout_definition",
+    "direction",
+    "timeframe",
+    "stop_distance",
+    "risk"
+  ],
+  "expected_behaviour": "returns clarification questions covering: market, breakout_definition, direction, timeframe, stop_distance, risk",
+  "must_not": "invent any value for a missing field",
+  "note": "Does not even name a market. 'Tight' is relative to nothing.",
+  "source": "B2 - Jaedyn, 2026-09-07"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "I011",
+  "completeness": "partial",
+  "market_hint": "ETH",
+  "raw_input": "Long ETH on a 1m close above VWAP after 09:00, exit at end of session.",
+  "missing_fields": [
+    "session_timezone",
+    "vwap_anchor",
+    "risk"
+  ],
+  "expected_behaviour": "returns clarification questions covering: session_timezone, vwap_anchor, risk",
+  "must_not": "invent any value for a missing field",
+  "note": "Crypto trades 24/7 - 'session' and '09:00' need a timezone and an explicit definition.",
+  "source": "B2 - Jaedyn, 2026-09-07"
+}

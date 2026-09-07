@@ -1,0 +1,11 @@
+{
+  "id": "I017",
+  "completeness": "edge",
+  "market_hint": "BTC",
+  "raw_input": "Long BTC 1m when close > open. Stop 0.1%, target 0.15%. Risk 0.5%, daily loss 2%, max 1 position.",
+  "missing_fields": [],
+  "expected_behaviour": "compiles to a valid StrategySpec with no questions",
+  "must_not": "invent any value for a missing field",
+  "note": "Compiles cleanly. Should trigger a COST warning: a 0.15% target cannot survive round-trip fees.",
+  "source": "B2 - Jaedyn, 2026-09-07"
+}

@@ -1,0 +1,16 @@
+{
+  "id": "I020",
+  "completeness": "partial",
+  "market_hint": "BTC",
+  "raw_input": "Long BTC when the 4h candle closes green three times in a row.",
+  "missing_fields": [
+    "timeframe_conflict",
+    "entry_timing",
+    "exit",
+    "risk"
+  ],
+  "expected_behaviour": "returns clarification questions covering: timeframe_conflict, entry_timing, exit, risk",
+  "must_not": "invent any value for a missing field",
+  "note": "Signal is 4h but \u00a76 caps the scope at 15m. Needs resolution: is the signal on a higher timeframe than execution?",
+  "source": "B2 - Jaedyn, 2026-09-07"
+}

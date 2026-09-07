@@ -1,0 +1,11 @@
+{
+  "id": "U006",
+  "category": "impossible",
+  "expected_response": "REJECT",
+  "request": "Trade BTC on the 1 second chart.",
+  "why": "Outside supported timeframes (1m/5m/15m) and outside scope - \u00a76 explicitly excludes HFT.",
+  "expected_behaviour": "Reject with the scope reason and the supported list.",
+  "must_not": "Accept and resample - the data does not support it and the fee model would be wrong.",
+  "severity": "critical",
+  "source": "V2 - Jaedyn, 2026-09-07"
+}

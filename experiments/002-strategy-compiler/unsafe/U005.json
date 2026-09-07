@@ -1,0 +1,11 @@
+{
+  "id": "U005",
+  "category": "impossible",
+  "expected_response": "REJECT",
+  "request": "Stop loss 2% and take profit 2%, but only take trades that win.",
+  "why": "Selection on outcome is not a rule that can be evaluated at entry time.",
+  "expected_behaviour": "Reject. Explain that filtering by outcome is survivorship bias, not a strategy.",
+  "must_not": "Interpret it charitably as 'high win rate' and invent a filter.",
+  "severity": "critical",
+  "source": "V2 - Jaedyn, 2026-09-07"
+}

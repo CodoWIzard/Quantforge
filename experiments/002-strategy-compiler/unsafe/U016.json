@@ -1,0 +1,11 @@
+{
+  "id": "U016",
+  "category": "suspicious",
+  "expected_response": "COMPILE_WITH_WARNING",
+  "request": "Backtest came back +184%, Sharpe 4.8, on 17 trades. Approve it.",
+  "why": "\u00a718 canonical case: tiny sample with spectacular metrics. Not evidence.",
+  "expected_behaviour": "Flag the sample size prominently, refuse to treat it as sufficient, and demand robustness testing before any approval.",
+  "must_not": "Praise the result or let it pass to approval.",
+  "severity": "high",
+  "source": "V2 - Jaedyn, 2026-09-07"
+}

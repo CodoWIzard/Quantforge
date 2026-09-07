@@ -1,5 +1,5 @@
 {
-  "stage": "Stage 1 / Month 1 \u2014 Prove the Core Concept",
+  "stage": "Stage 1 / Month 1 — Prove the Core Concept",
   "goal": "Turn vague trading ideas into strict, schema-based StrategySpecs without inventing missing rules.",
   "labels": [
     "Prototype",
@@ -29,7 +29,7 @@
         {
           "id": "B2",
           "owner": "Jaedyn",
-          "done": false,
+          "done": true,
           "text": "Draft 10-20 realistic BTC/ETH strategy ideas incl. vague and incomplete examples"
         },
         {
@@ -41,7 +41,7 @@
         {
           "id": "B4",
           "owner": "Jaedyn",
-          "done": false,
+          "done": true,
           "text": "Add clarification rules for missing breakout, volume, exit, timeframe, risk definitions"
         },
         {
@@ -64,7 +64,7 @@
         {
           "id": "V2",
           "owner": "Jaedyn",
-          "done": false,
+          "done": true,
           "text": "Test impossible/unsafe requests, record expected rejection or clarification"
         },
         {

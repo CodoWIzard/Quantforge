@@ -1,0 +1,98 @@
+{
+  "version": "0.1.0",
+  "owner": "Jaedyn",
+  "task": "B4",
+  "source": "blueprint \u00a718, AGENTS.md",
+  "rules": {
+    "breakout": {
+      "trigger": "Input mentions break/breakout/breaks above/below, or names a level without defining it.",
+      "why": "'Breakout' silently bundles four independent decisions. Guessing any one of them changes the trade count by an order of magnitude.",
+      "ask": [
+        "Which level exactly - previous N-period high/low, session high, a round number, or a drawn level?",
+        "Over what lookback window is that level computed?",
+        "Does an intrabar touch count, or only a confirmed close beyond the level?",
+        "Any buffer past the level before it counts (e.g. 0.05%)?"
+      ],
+      "never": "Default to 'previous 4h high' because the blueprint example used it. That example is one instance, not a default.",
+      "compiles_to": "entry.conditions[].expression + lookback_bars"
+    },
+    "volume": {
+      "trigger": "Input mentions volume, 'high volume', 'unusual volume', or volume confirmation.",
+      "why": "Volume needs a baseline AND a multiple. Either alone is meaningless. \u00a718 names inventing '1.5x' as the canonical failure.",
+      "ask": [
+        "Volume relative to what baseline - a simple MA, median, or same-hour-of-day average?",
+        "What period for that baseline?",
+        "What multiple counts as high (e.g. 1.5x)?",
+        "Measured on the signal timeframe or a higher one?"
+      ],
+      "never": "Assume 1.5x, assume sma(volume,20), or treat raw volume as comparable across timeframes.",
+      "compiles_to": "entry.conditions[].expression"
+    },
+    "exit": {
+      "trigger": "Input has entry logic but no stop, target, or time limit. Also 'let winners run', 'exit when it reverses'.",
+      "why": "An unbounded strategy has no risk profile and cannot be sized, backtested honestly, or approved. The schema requires at least one bounded exit.",
+      "ask": [
+        "Stop loss - fixed %, ATR multiple, or structural level?",
+        "Take profit, or exit on an opposite signal?",
+        "Maximum holding time before exiting regardless?",
+        "If both stop and target could be hit in the same bar, which takes priority?"
+      ],
+      "never": "Add a default stop. A strategy without an exit is incomplete, not a strategy with an implied one.",
+      "compiles_to": "exit.stop_loss_pct / take_profit_pct / max_holding_minutes"
+    },
+    "timeframe": {
+      "trigger": "No timeframe stated, or signal and execution timeframes differ, or an out-of-scope timeframe.",
+      "why": "The same rule on 1m and 15m is two different strategies. Scope is 1m/5m/15m only (\u00a76); a 4h signal needs an explicit multi-timeframe decision.",
+      "ask": [
+        "Which timeframe do the entry conditions evaluate on - 1m, 5m or 15m?",
+        "If a condition references a higher timeframe, does execution stay on the lower one?",
+        "Must the higher-timeframe bar be closed before the signal is valid?"
+      ],
+      "never": "Infer a timeframe from the indicator period, or silently execute on the signal timeframe.",
+      "compiles_to": "timeframe + rule.lookback_bars"
+    },
+    "risk": {
+      "trigger": "No risk block, or qualitative sizing ('small size', 'go big', 'tight stops').",
+      "why": "Risk is mandatory in the schema and enforced by the risk engine. Qualitative sizing cannot be enforced or backtested.",
+      "ask": [
+        "What percentage of account equity is risked per trade?",
+        "What daily loss limit halts trading for the day?",
+        "How many positions may be open at once?",
+        "Any maximum notional exposure cap?"
+      ],
+      "never": "Copy risk values from another strategy or use the schema maximum as a default.",
+      "compiles_to": "risk.risk_per_trade_pct / daily_loss_limit_pct / max_open_positions"
+    },
+    "indicator_params": {
+      "trigger": "An indicator is named without its period, or a threshold without the indicator.",
+      "why": "RSI(9) and RSI(21) generate different trades from the same words. An unstated period is a hidden free parameter - exactly what sensitivity testing later punishes.",
+      "ask": [
+        "Which period for that indicator?",
+        "Which price input - close, hlc3, typical price?",
+        "What exact threshold, and is the comparison strict or inclusive?"
+      ],
+      "never": "Use the 'standard' period. Conventional defaults are still invented parameters.",
+      "compiles_to": "entry.conditions[].expression"
+    },
+    "direction": {
+      "trigger": "Direction not stated, or a symmetric rule is described without confirming both sides trade.",
+      "why": "Long-only and long/short have different exposure and different regime dependence.",
+      "ask": [
+        "Long only, short only, or both?",
+        "If both, are the conditions mirrored exactly or defined separately?"
+      ],
+      "never": "Assume long-only because the example was bullish.",
+      "compiles_to": "direction"
+    },
+    "market": {
+      "trigger": "No market named, or a market outside BTC-PERP / ETH-PERP.",
+      "why": "ADR-001 restricts internship scope to BTC and ETH perpetuals on one exchange.",
+      "ask": [
+        "BTC-PERP or ETH-PERP?",
+        "If both, one spec per market or shared parameters?"
+      ],
+      "never": "Accept an out-of-scope symbol. That is a scope rejection with an explanation, not a clarification.",
+      "compiles_to": "market"
+    }
+  }
+}

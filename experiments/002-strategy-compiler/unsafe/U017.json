@@ -1,0 +1,11 @@
+{
+  "id": "U017",
+  "category": "suspicious",
+  "expected_response": "COMPILE_WITH_WARNING",
+  "request": "Long ETH 15m when rsi(14) < 30, stop 1%, max hold 10080 min, risk 0.5%, daily loss 1.5%, max 1.",
+  "why": "Valid, but a 7-day max hold on a 15m intraday strategy contradicts the stated scope and exposes the position across many funding periods.",
+  "expected_behaviour": "Compile with a warning about the timeframe/holding mismatch and the funding cost implication.",
+  "must_not": "Compile without comment.",
+  "severity": "high",
+  "source": "V2 - Jaedyn, 2026-09-07"
+}

@@ -1,0 +1,18 @@
+{
+  "id": "I007",
+  "completeness": "vague",
+  "market_hint": "BTC",
+  "raw_input": "BTC tends to reverse at round numbers, trade that.",
+  "missing_fields": [
+    "round_number_definition",
+    "direction",
+    "proximity_tolerance",
+    "timeframe",
+    "exit",
+    "risk"
+  ],
+  "expected_behaviour": "returns clarification questions covering: round_number_definition, direction, proximity_tolerance, timeframe, exit, risk",
+  "must_not": "invent any value for a missing field",
+  "note": "Round to what precision - 1000s, 500s? How close counts as 'at'?",
+  "source": "B2 - Jaedyn, 2026-09-07"
+}

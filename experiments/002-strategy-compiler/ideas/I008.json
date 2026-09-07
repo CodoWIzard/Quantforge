@@ -1,0 +1,14 @@
+{
+  "id": "I008",
+  "completeness": "partial",
+  "market_hint": "BTC",
+  "raw_input": "Long BTC when the 5m close breaks the previous 4h high on volume above 1.5x the 20-period average.",
+  "missing_fields": [
+    "exit",
+    "risk"
+  ],
+  "expected_behaviour": "returns clarification questions covering: exit, risk",
+  "must_not": "invent any value for a missing field",
+  "note": "Entry is fully specified - this is the blueprint's own \u00a710 example. Exit and risk absent.",
+  "source": "B2 - Jaedyn, 2026-09-07"
+}

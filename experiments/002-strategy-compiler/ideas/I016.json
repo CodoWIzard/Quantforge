@@ -1,0 +1,11 @@
+{
+  "id": "I016",
+  "completeness": "complete",
+  "market_hint": "ETH",
+  "raw_input": "Short ETH-PERP on 15m. Enter next bar open when close < previous_4h_low and rsi(14) < 40. Stop 1.2%, max holding 240 minutes. Risk 0.5%/trade, daily loss 2%, max 2 positions.",
+  "missing_fields": [],
+  "expected_behaviour": "compiles to a valid StrategySpec with no questions",
+  "must_not": "invent any value for a missing field",
+  "note": "Second complete case, short side, max-hold exit instead of a target.",
+  "source": "B2 - Jaedyn, 2026-09-07"
+}

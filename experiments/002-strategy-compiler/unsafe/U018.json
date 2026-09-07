@@ -1,0 +1,11 @@
+{
+  "id": "U018",
+  "category": "suspicious",
+  "expected_response": "COMPILE_WITH_WARNING",
+  "request": "Long BTC 5m when close > sma(close,20), stop 5%, target 0.2%, risk 0.5%, daily loss 2%, max 1.",
+  "why": "Risk:reward is 25:1 against. Will show a high win rate and a catastrophic tail - the classic flattering-backtest shape.",
+  "expected_behaviour": "Compile with a warning about the asymmetry and note that the equity curve will look good until it does not.",
+  "must_not": "Report the high win rate as a positive.",
+  "severity": "high",
+  "source": "V2 - Jaedyn, 2026-09-07"
+}

@@ -1,0 +1,14 @@
+{
+  "id": "I013",
+  "completeness": "partial",
+  "market_hint": "BTC",
+  "raw_input": "Long BTC when funding is negative and price is above the 200-period MA on 15m. Risk 1% per trade.",
+  "missing_fields": [
+    "funding_threshold",
+    "exit"
+  ],
+  "expected_behaviour": "returns clarification questions covering: funding_threshold, exit",
+  "must_not": "invent any value for a missing field",
+  "note": "'Negative funding' - any negative value, or below a threshold? No exit.",
+  "source": "B2 - Jaedyn, 2026-09-07"
+}

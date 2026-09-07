@@ -1,0 +1,15 @@
+{
+  "id": "I010",
+  "completeness": "partial",
+  "market_hint": "BTC",
+  "raw_input": "Short BTC when price is more than 2 ATR above the 50 EMA on the 15m.",
+  "missing_fields": [
+    "atr_period",
+    "exit",
+    "risk"
+  ],
+  "expected_behaviour": "returns clarification questions covering: atr_period, exit, risk",
+  "must_not": "invent any value for a missing field",
+  "note": "ATR period unstated - ATR(14) vs ATR(20) materially changes the trigger.",
+  "source": "B2 - Jaedyn, 2026-09-07"
+}
