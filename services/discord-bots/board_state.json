@@ -47,7 +47,7 @@
         {
           "id": "B5",
           "owner": "Both",
-          "done": false,
+          "done": true,
           "text": "Confirm invalid/missing values become questions or errors, never invented defaults"
         }
       ]
@@ -70,7 +70,7 @@
         {
           "id": "V3",
           "owner": "Both",
-          "done": false,
+          "done": true,
           "text": "Pick 3 demo examples showing vague idea -> structured StrategySpec"
         }
       ]

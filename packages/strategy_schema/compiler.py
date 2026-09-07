@@ -83,8 +83,34 @@ def _triggers_breakout(candidate: dict) -> bool:
 
 
 def _triggers_volume(candidate: dict) -> bool:
+    """Volume is mentioned but not fully quantified.
+
+    A volume condition needs THREE things to be answerable: a baseline (what we
+    compare against), a period for that baseline, and a multiple. B4 is explicit
+    that guessing any of them - notably the tempting "1.5x" - is the canonical
+    §18 failure.
+
+    But a condition that already states all three, e.g.::
+
+        volume > 1.5 * sma(volume, 20)
+
+    has nothing left to ask about. Firing on the bare word "volume" made the
+    compiler interrogate its own reference spec (I015, the blueprint §10 example)
+    and refuse to compile a strategy that was complete by construction. Asking a
+    question the user already answered is its own kind of not-listening.
+    """
     text = _text_of(candidate)
-    return bool(re.search(r"\bvolume\b", text))
+    if not re.search(r"\bvolume\b", text):
+        return False
+    # baseline + period, e.g. sma(volume, 20) / ema(volume,20) / median(volume, 20)
+    quantified_baseline = re.search(
+        r"\b(sma|ema|median|avg|average)\s*\(\s*volume\s*,\s*\d+\s*\)", text
+    )
+    # an explicit multiple or threshold, e.g. "1.5 *" or "> 1000"
+    has_multiple = re.search(r"\d+(\.\d+)?\s*[*x×]", text) or re.search(
+        r"volume\s*[<>]=?\s*\d", text
+    )
+    return not (quantified_baseline and has_multiple)
 
 
 def _triggers_exit(candidate: dict) -> bool:

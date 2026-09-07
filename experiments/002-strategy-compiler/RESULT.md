@@ -66,6 +66,46 @@ under-specified, 'complete' ideas genuinely need no questions, impossible/unsafe
 never downgraded to warnings, and the injection / real-money / loss-chasing / look-ahead
 fixtures are all present and rejecting.
 
+## B5 + V3 executed against the implemented compiler (2026-09-07)
+
+B3 landed, so the deterministic half of the loop can now be *run* rather than described.
+Both harnesses are committed and re-runnable; neither needs a model, network or Azure.
+
+    .venv/bin/python experiments/002-strategy-compiler/run_b5_evidence.py   # exit 0
+    .venv/bin/python experiments/002-strategy-compiler/run_v3_demos.py      # exit 0
+
+### B5 — no invented defaults
+
+    20 ideas: 15 under-specified, 5 complete/edge
+    287 clarification questions generated across the corpus
+    13 REJECT-class unsafe requests: all refused
+    No idea compiled with an unanswered question.
+
+### V3 — three demos
+
+| Demo | Shows |
+|---|---|
+| I002 vague | 19 questions, refuses to compile |
+| I008 partial | entry specified, exit/risk missing — still blocks |
+| I015 complete | 0 questions once answered; compiles and hashes |
+
+### A real bug this surfaced
+
+`_triggers_volume` fired on the bare word "volume", so the compiler interrogated its own
+reference spec — it asked "what multiple counts as high?" about
+`volume > 1.5 * sma(volume, 20)`, which already says. I015 could not compile.
+
+Fixed: the rule now fires only when a quantified baseline *and* a multiple are absent.
+Vague volume still asks. Asking a question the user already answered is its own failure —
+it teaches people to skim past the questions, which is precisely what B4 exists to prevent.
+
+### Honest limitation
+
+**No natural language was parsed.** `compile_candidate()` takes a structured dict; turning
+a sentence into that dict is the Strategy Specialist agent's job and is blocked on
+Experiment 001 (Foundry, no Azure subscription yet). What is proven: the schema, the
+clarification rules, the refusal behaviour and the hashing all work deterministically.
+
 ## Gate met?
 
 - [x] 10–20 test prompts drafted (20)
