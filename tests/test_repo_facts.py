@@ -104,7 +104,9 @@ def test_facts_separate_the_three_states():
     facts = bots.repo_facts()
     for marker in ("CODE THAT RUNS", "RESEARCH ARTIFACTS", "SCAFFOLDING"):
         assert marker in facts
-    assert "No backtest has ever run" in facts
+    low = facts.lower()
+    assert "backtest" in low and "has ever run" in low
+    assert "no performance metric" in low or "no metrics exist" in low
 
 
 def test_experiment_002_result_is_actually_written():

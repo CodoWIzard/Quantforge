@@ -35,7 +35,7 @@
         {
           "id": "B3",
           "owner": "Jayden",
-          "done": false,
+          "done": true,
           "text": "Implement/document compiler path: natural language -> strict JSON/Pydantic output"
         },
         {

@@ -16,8 +16,12 @@ Contracts are frozen; implementation has not started.
 - `backtest-result.schema.json` — nullable Sharpe, engine warnings, verdict block
 - `openapi.yaml` — agreed HTTP surface for apps/api
 
+### Implemented (B3, commit 534a598)
+- `packages/strategy_schema/` — **working code, no stubs left**: pydantic models
+  mirroring the JSON Schema, `clarification_questions()` walking the 8 B4 rules, and
+  `compile_candidate()` which asks before it builds. Never run against a model yet.
+
 ### Python skeletons (signatures + docstrings, bodies raise NotImplementedError)
-- `packages/strategy_schema/` — models, compiler, typed errors
 - `packages/risk_engine/` — hard limits, pre-trade checks, kill switch
 - `packages/exchange_contracts/` — symbols, fees, order intent
 - `research/backtester/` — engine, lookahead assertions, metrics
@@ -59,8 +63,11 @@ Contracts are frozen; implementation has not started.
 - No Foundry deployment, model or agent — instructions are drafts never run against a model
 - No Kraken data downloaded. No collector running. No Parquet lake.
 - No PostgreSQL instance, no schema, no migrations
-- **No executable logic anywhere in packages/ or research/** — every function raises
-  NotImplementedError. The shapes are agreed; nothing computes.
+- **No executable logic in `risk_engine`, `exchange_contracts`, `backtester` or
+  `validation`** — every body still raises NotImplementedError. (`strategy_schema` is
+  the exception: B3 implemented it.)
+- Do not describe implementation state from this file alone — it lags merges. The bots
+  count `raise NotImplementedError` from source at request time; that scan wins.
 - No backtest has ever been run. No metrics exist. Any number quoted about strategy
   performance would be fabricated — the engine has never executed.
 - Experiment 002's fixtures exist but have never been run against a model (needs 001).

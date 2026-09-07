@@ -136,6 +136,36 @@ def repo_facts() -> str:
         # Without this the bot finds the right folder but cannot say which task it
         # satisfied - it answered "I don't know what B2 B4 V2 refers to" while
         # standing on the files.
+        # Implementation state, measured per module. NEVER hardcode this sentence:
+        # when B3 landed, the old fixed text kept calling strategy_schema "scaffolding"
+        # and the bot denied committed, working code existed.
+        impl: list[str] = []
+        for pkg_root in ("packages", "research"):
+            for mod in sorted((REPO / pkg_root).glob("*/")):
+                if not mod.is_dir() or mod.name.startswith((".", "_")):
+                    continue
+                try:
+                    srcs = [p for p in mod.glob("*.py") if p.name != "__init__.py"]
+                    if not srcs:
+                        continue
+                    text = "\n".join(p.read_text() for p in srcs)
+                except OSError:
+                    continue
+                stubs = text.count("raise NotImplementedError")
+                defs = sum(1 for line in text.splitlines()
+                           if line.lstrip().startswith("def "))
+                if defs == 0:
+                    continue
+                if stubs == 0:
+                    state = "IMPLEMENTED (no stubs left)"
+                elif stubs >= defs:
+                    state = "SCAFFOLDING (every body is a stub)"
+                else:
+                    state = f"PARTIAL ({stubs} of {defs} still stubs)"
+                impl.append(f"    {pkg_root}/{mod.name}: {state}")
+        implementation = ("\n  IMPLEMENTATION STATE (counted from source just now):\n"
+                          + "\n".join(impl) + "\n") if impl else ""
+
         board = ""
         try:
             board_path = REPO / "services" / "discord-bots" / "board_state.json"
@@ -163,14 +193,19 @@ def repo_facts() -> str:
             "  NOTE: there is no /engine/, /validation/, /paper/ or /docs/ADRs/ directory.\n"
             "  The deterministic core is packages/ + research/. Contracts are data-contracts/.\n"
             + artifacts
+            + implementation
             + board
             + "\n  THREE DISTINCT STATES - do not collapse them:\n"
             "    1. CODE THAT RUNS: tests/ and services/discord-bots/ only.\n"
             "    2. RESEARCH ARTIFACTS: written fixtures and rules listed above. These EXIST\n"
             "       and are committed. Confirm them when asked - do not deny them because\n"
             "       CURRENT_STATE.md says no implementation exists.\n"
-            "    3. SCAFFOLDING: packages/ and research/ - signatures whose bodies raise\n"
-            "       NotImplementedError. No backtest has ever run. No metrics exist.\n"
+            "    3. SCAFFOLDING: modules marked SCAFFOLDING or PARTIAL above. Do NOT\n"
+            "       call a module scaffolding if the scan says IMPLEMENTED - that scan\n"
+            "       is counted from source and outranks any doc, including\n"
+            "       CURRENT_STATE.md, which can lag behind a merge.\n"
+            "  Implemented code existing does NOT mean it has been exercised: no backtest\n"
+            "  has ever run and no performance metric exists anywhere in this project.\n"
         )
     except OSError as exc:
         return (

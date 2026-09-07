@@ -8,11 +8,17 @@ dependencies = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q --strict-markers"
+addopts = "-q --strict-markers -m 'not live'"
 # Make `packages.*` and `research.*` importable without an editable install.
 # Without this, tests pass locally (cwd happens to be on sys.path) and fail on CI
 # with ModuleNotFoundError - which is exactly what happened.
 pythonpath = ["."]
+# --strict-markers is on, so every marker must be declared here.
+markers = [
+    "live: hits a real external API. Excluded from CI - no test may require network.",
+]
+# Live tests are excluded by default (see addopts). Run them deliberately:
+#   .venv/bin/python -m pytest -m live
 
 [tool.ruff]
 line-length = 100
