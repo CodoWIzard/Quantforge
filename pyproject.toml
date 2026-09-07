@@ -9,6 +9,10 @@ dependencies = [
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q --strict-markers"
+# Make `packages.*` and `research.*` importable without an editable install.
+# Without this, tests pass locally (cwd happens to be on sys.path) and fail on CI
+# with ModuleNotFoundError - which is exactly what happened.
+pythonpath = ["."]
 
 [tool.ruff]
 line-length = 100
