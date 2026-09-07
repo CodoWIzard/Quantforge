@@ -6,6 +6,7 @@ script paths). These tests fail if the two drift apart.
 """
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 from pathlib import Path
@@ -17,6 +18,24 @@ BASH = shutil.which("bash") or "/bin/bash"
 ROOT = Path(__file__).resolve().parents[1]
 REPO_COPY = ROOT / "infra" / "cron" / "quantforge_board_refresh.sh"
 INSTALLED = Path("/root/.hermes/scripts/quantforge_board_refresh.sh")
+
+
+def _installed_readable() -> bool:
+    """True only if the installed copy exists AND we may read it.
+
+    ``Path.exists()`` RAISES PermissionError when a parent directory is not
+    traversable - which is exactly the case on a CI runner that is not root.
+    An unguarded call therefore aborts collection of this whole module rather
+    than skipping it. These drift checks are host-only by nature, so any
+    OSError means "not applicable here", not "fail the build".
+    """
+    try:
+        return INSTALLED.is_file() and os.access(INSTALLED, os.R_OK)
+    except OSError:
+        return False
+
+
+INSTALLED_AVAILABLE = _installed_readable()
 
 
 def test_repo_copy_exists() -> None:
@@ -35,7 +54,7 @@ def test_shellcheck_clean() -> None:
     assert r.returncode == 0, r.stdout
 
 
-@pytest.mark.skipif(not INSTALLED.exists(), reason="installed copy absent")
+@pytest.mark.skipif(not INSTALLED_AVAILABLE, reason="installed copy absent or unreadable")
 def test_installed_copy_matches_repo() -> None:
     """Drift here means cron silently runs stale code."""
     assert INSTALLED.read_text() == REPO_COPY.read_text(), (
@@ -43,7 +62,7 @@ def test_installed_copy_matches_repo() -> None:
         "run: cp infra/cron/quantforge_board_refresh.sh ~/.hermes/scripts/")
 
 
-@pytest.mark.skipif(not INSTALLED.exists(), reason="installed copy absent")
+@pytest.mark.skipif(not INSTALLED_AVAILABLE, reason="installed copy absent or unreadable")
 def test_installed_copy_is_executable() -> None:
     assert INSTALLED.stat().st_mode & 0o111
 
