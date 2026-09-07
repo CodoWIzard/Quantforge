@@ -31,8 +31,23 @@ Contracts are frozen; implementation has not started.
 ### Experiment ladder (experiments/)
 - All ten rungs 001–010 scaffolded with build description, exit gate and RESULT.md template
 
-### Tests — **89 passed, 38 xfailed**
+### Experiment 002 research artifacts — DONE 2026-09-07 (Jaedyn: B2, B4, V2)
+- **B2** `experiments/002-strategy-compiler/ideas/I001–I020.json` — 20 BTC/ETH strategy
+  ideas: 7 vague, 8 partial, 2 complete, 3 edge. 66 annotated missing fields.
+- **B4** `experiments/002-strategy-compiler/CLARIFICATION_RULES.md` + `.json` — 8 rules,
+  26 questions covering breakout, volume, exit, timeframe, risk, indicator_params,
+  direction, market.
+- **V2** `experiments/002-strategy-compiler/unsafe/U001–U018.json` — 18 impossible/unsafe
+  requests: 13 REJECT, 1 CLARIFY, 4 COMPILE_WITH_WARNING.
+- `experiments/002-strategy-compiler/RESULT.md` is written up (104 lines), NOT a blank
+  template. Board items B2/B4/V2 are marked done.
+- These are **research artifacts** — the corpus and expected behaviour. No model has been
+  run against them yet, so Experiment 002's gate is NOT met. The compiler still raises.
+
+### Tests — **154 passed, 38 xfailed**
 - `test_contracts.py` (14) and `test_agent_contracts.py` — run today, assert the contracts
+- `test_experiment_002_fixtures.py` (56) — locks the B2/B4/V2 corpus
+- `test_repo_facts.py` (9) — bots must describe the repo from disk, never from memory
 - Nine Appendix E catalogue files — xfail until their subsystem exists
 
 ### Infra + docs
@@ -46,6 +61,9 @@ Contracts are frozen; implementation has not started.
 - No PostgreSQL instance, no schema, no migrations
 - **No executable logic anywhere in packages/ or research/** — every function raises
   NotImplementedError. The shapes are agreed; nothing computes.
+- No backtest has ever been run. No metrics exist. Any number quoted about strategy
+  performance would be fabricated — the engine has never executed.
+- Experiment 002's fixtures exist but have never been run against a model (needs 001).
 - No Dockerfiles written
 - pydantic is not yet a dependency (add it with Experiment 002)
 - `packages/exchange_contracts/symbols.py` tick sizes and min order sizes are empty —

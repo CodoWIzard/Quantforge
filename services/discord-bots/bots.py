@@ -58,6 +58,78 @@ logging.basicConfig(
 )
 log = logging.getLogger("quantforge")
 
+# ---------------------------------------------------------------- repo facts
+
+
+def repo_facts() -> str:
+    """Real, current repository layout injected into every prompt.
+
+    WHY THIS EXISTS: the persona used to name the repo path without giving the model
+    any way to read it. Asked "where does shipped work live?", the model produced a
+    confident, entirely invented tree (/engine/, /validation/, /paper/, /docs/ADRs/,
+    CONTRIBUTING.md - none of which exist). A model told *about* a repo it cannot see
+    will fill the gap with plausible fiction.
+
+    Reading the real tree costs one cheap filesystem walk per request and removes the
+    guessing. If the repo cannot be read we say so explicitly rather than letting the
+    model improvise.
+    """
+    try:
+        skip = {".git", ".venv", "__pycache__", ".pytest_cache", ".ruff_cache",
+                "node_modules", "logs"}
+        lines: list[str] = []
+        for top in sorted(p for p in REPO.iterdir() if p.is_dir() and p.name not in skip):
+            subs = sorted(
+                c.name for c in top.iterdir()
+                if c.is_dir() and c.name not in skip
+            )[:12]
+            lines.append(f"  {top.name}/" + (f"  -> {', '.join(subs)}" if subs else ""))
+        roots = sorted(
+            p.name for p in REPO.iterdir()
+            if p.is_file() and p.suffix in {".md", ".toml", ".json"}
+        )
+        adrs = sorted(q.name for q in (REPO / "docs" / "decisions").glob("ADR-*.md"))
+
+        # Count real artifacts. Without this the model reads CURRENT_STATE.md, sees
+        # "no implementation exists", and wrongly reports that written-up research
+        # does not exist either. Scaffolding-vs-research-vs-code are three states.
+        art: list[str] = []
+        for exp in sorted((REPO / "experiments").glob("0*")):
+            files = [p for p in exp.rglob("*.json")]
+            res = exp / "RESULT.md"
+            written = res.is_file() and len(res.read_text().splitlines()) > 40
+            if files or written:
+                art.append(
+                    f"    {exp.name}: {len(files)} fixture files, "
+                    f"RESULT.md {'WRITTEN UP' if written else 'still a blank template'}"
+                )
+        artifacts = ("\n  RESEARCH ARTIFACTS THAT EXIST (files on disk, not plans):\n"
+                     + "\n".join(art)) if art else ""
+
+        return (
+            "ACTUAL REPOSITORY LAYOUT (read from disk just now - trust this over memory):\n"
+            + "\n".join(lines)
+            + "\n  root files: " + ", ".join(roots)
+            + f"\n  ADRs ({len(adrs)}) live in docs/decisions/, named ADR-001..ADR-010.\n"
+            "  NOTE: there is no /engine/, /validation/, /paper/ or /docs/ADRs/ directory.\n"
+            "  The deterministic core is packages/ + research/. Contracts are data-contracts/.\n"
+            + artifacts
+            + "\n  THREE DISTINCT STATES - do not collapse them:\n"
+            "    1. CODE THAT RUNS: tests/ and services/discord-bots/ only.\n"
+            "    2. RESEARCH ARTIFACTS: written fixtures and rules listed above. These EXIST\n"
+            "       and are committed. Confirm them when asked - do not deny them because\n"
+            "       CURRENT_STATE.md says no implementation exists.\n"
+            "    3. SCAFFOLDING: packages/ and research/ - signatures whose bodies raise\n"
+            "       NotImplementedError. No backtest has ever run. No metrics exist.\n"
+        )
+    except OSError as exc:
+        return (
+            f"REPOSITORY LAYOUT UNAVAILABLE ({type(exc).__name__}). "
+            "You must say you cannot read the repo right now. Do NOT describe its "
+            "structure from memory - you would be guessing.\n"
+        )
+
+
 # ---------------------------------------------------------------- personas
 
 CONTEXT = """You are part of QuantForge: an AI-assisted trading strategy research,
@@ -78,6 +150,14 @@ Absolute rules you must never break:
 - Paper/demo only. No real money this internship (ADR-002).
 - GitHub is the source of truth, not Discord (ADR-010).
 - Never reveal credentials, tokens or file contents of /root/.config.
+- NEVER describe repository structure, file paths, ADR numbers, PRs or shipped work
+  from memory or inference. A prompt below contains the ACTUAL layout read from disk.
+  Use ONLY that. If something is not listed there, it does not exist - say so.
+  Inventing a plausible-sounding path is a serious failure: it sends people looking
+  for files that were never written and fakes an audit trail.
+- Distinguish what EXISTS from what is PLANNED. Most of this repo is scaffolding:
+  directories and documented contracts whose Python bodies still raise
+  NotImplementedError. Never imply a component runs when only its shape is agreed.
 
 Answer in plain text suitable for a Discord message. Be concise and concrete.
 Under 1500 characters unless asked to go deeper. No markdown headers."""
@@ -110,6 +190,7 @@ _sem = asyncio.Semaphore(2)  # shared OAuth token; avoid hammering it
 async def ask_hermes(persona: str, question: str, who: str, channel: str) -> str:
     prompt = (
         f"{persona}\n\n"
+        f"{repo_facts()}\n"
         f"Discord #{channel} | asked by {who}\n"
         f"Question: {question}\n\n"
         f"Reply with the message text only."
