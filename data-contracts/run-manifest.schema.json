@@ -1,0 +1,160 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quantforge.dev/contracts/v1/run-manifest.schema.json",
+  "title": "RunManifest",
+  "description": "Blueprint \u00a721 step 2 and glossary: the exact strategy/data/engine/cost assumptions needed to reproduce a run. AGENTS.md: every backtest result must be reproducible from its RunManifest. Persisted to PostgreSQL data_manifests.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "created_utc",
+    "strategy_id",
+    "strategy_version",
+    "dataset",
+    "fee_model",
+    "slippage_model",
+    "engine_version"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "created_utc": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "strategy_id": {
+      "type": "string"
+    },
+    "strategy_version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "strategy_hash": {
+      "type": "string",
+      "description": "sha256 of the canonical StrategySpec JSON. Detects silent mutation."
+    },
+    "dataset": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version",
+        "partitions",
+        "start_utc",
+        "end_utc"
+      ],
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "Curated dataset version tag."
+        },
+        "partitions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Exact Parquet partition paths read (\u00a726)."
+        },
+        "start_utc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "end_utc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "row_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "gap_policy": {
+          "type": "string",
+          "enum": [
+            "fail",
+            "mark_and_exclude"
+          ],
+          "description": "Never 'interpolate silently' - that is an explicit \u00a718 failure case."
+        }
+      }
+    },
+    "fee_model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "maker_bps",
+        "taker_bps"
+      ],
+      "properties": {
+        "maker_bps": {
+          "type": "number"
+        },
+        "taker_bps": {
+          "type": "number"
+        },
+        "funding_applied": {
+          "type": "boolean"
+        }
+      }
+    },
+    "slippage_model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "fixed_bps",
+            "spread_fraction",
+            "none"
+          ]
+        },
+        "value": {
+          "type": "number"
+        },
+        "execution_delay_bars": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "engine_version": {
+      "type": "string",
+      "description": "research/backtester semantic version."
+    },
+    "code_commit": {
+      "type": "string",
+      "description": "git sha of the repo state that produced the run."
+    },
+    "random_seed": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "cost": {
+      "type": "object",
+      "description": "\u00a750 internal cost ledger. Recorded for every job, not just AI jobs.",
+      "properties": {
+        "cpu_seconds": {
+          "type": "number"
+        },
+        "bytes_read": {
+          "type": "integer"
+        },
+        "model_tokens_in": {
+          "type": "integer"
+        },
+        "model_tokens_out": {
+          "type": "integer"
+        },
+        "credits_charged": {
+          "type": "number"
+        }
+      }
+    }
+  }
+}

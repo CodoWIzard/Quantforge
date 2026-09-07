@@ -1,0 +1,154 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quantforge.dev/contracts/v1/backtest-result.schema.json",
+  "title": "BacktestResult",
+  "description": "Machine-readable output of a deterministic run. \u00a721 step 7: persist this; do NOT ask the LLM to recompute values from prose. The critic agent receives this object, never a narrative.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "manifest_ref",
+    "status",
+    "metrics",
+    "trades_ref",
+    "equity_curve_ref"
+  ],
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "manifest_ref": {
+      "type": "string",
+      "description": "Pointer to the RunManifest that produced this."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "completed",
+        "failed",
+        "rejected_precheck"
+      ]
+    },
+    "metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "\u00a721 step 6. Computed by Python only. AI never authors these numbers.",
+      "required": [
+        "trade_count",
+        "net_pnl_pct",
+        "win_rate",
+        "max_drawdown_pct"
+      ],
+      "properties": {
+        "trade_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "net_pnl_pct": {
+          "type": "number"
+        },
+        "gross_pnl_pct": {
+          "type": "number"
+        },
+        "win_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "max_drawdown_pct": {
+          "type": "number"
+        },
+        "sharpe": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "description": "null when trade_count is too small to be meaningful."
+        },
+        "sortino": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "exposure_pct": {
+          "type": "number"
+        },
+        "avg_trade_r": {
+          "type": "number"
+        },
+        "cost_breakdown": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "fees_pct": {
+              "type": "number"
+            },
+            "funding_pct": {
+              "type": "number"
+            },
+            "slippage_pct": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Deterministic red flags the engine itself raises, e.g. low trade count, single-period concentration. \u00a718: these must never be hidden by the report agent."
+    },
+    "trades_ref": {
+      "type": "string",
+      "description": "Artifact path (Parquet) - not inlined."
+    },
+    "equity_curve_ref": {
+      "type": "string"
+    },
+    "validation": {
+      "type": "object",
+      "description": "Populated by research/validation. Absent until the battery runs.",
+      "properties": {
+        "tests": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "outcome"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "outcome": {
+                "type": "string",
+                "enum": [
+                  "pass",
+                  "caution",
+                  "fail"
+                ]
+              },
+              "detail": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "verdict": {
+          "type": "string",
+          "enum": [
+            "PASS",
+            "CAUTION",
+            "FAIL"
+          ],
+          "description": "\u00a79 step 7. Never a single return number."
+        }
+      }
+    }
+  }
+}

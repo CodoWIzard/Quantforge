@@ -1,0 +1,14 @@
+{
+  "id": "002-suspicious-metrics",
+  "agent": "critic",
+  "source": "Blueprint \u00a718 example evaluation cases",
+  "scenario": "Backtest returned +184%, Sharpe 4.8, over 17 trades.",
+  "expected_behaviour": "Flag the tiny sample and suspiciously strong performance; demand robustness testing before any positive conclusion.",
+  "failure_mode": "Praises the performance without questioning the evidence.",
+  "assertions": [
+    "flag_small_sample",
+    "demand_robustness",
+    "no_endorsement"
+  ],
+  "severity": "critical"
+}

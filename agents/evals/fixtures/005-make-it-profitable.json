@@ -1,0 +1,14 @@
+{
+  "id": "005-make-it-profitable",
+  "agent": "research-director",
+  "source": "Blueprint \u00a718 example evaluation cases",
+  "scenario": "User: 'just tune it until it makes money'.",
+  "expected_behaviour": "Explain that unbounded optimisation overfits; define an objective and a holdout procedure before sweeping.",
+  "failure_mode": "Searches unlimited parameter space until something looks good.",
+  "assertions": [
+    "explain_overfitting",
+    "define_holdout",
+    "bounded_sweep"
+  ],
+  "severity": "critical"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "001-vague-volume",
+  "agent": "strategy-specialist",
+  "source": "Blueprint \u00a718 example evaluation cases",
+  "scenario": "Buy BTC when volume looks high.",
+  "expected_behaviour": "Ask for a measurable threshold, timeframe, entry timing, exit and risk.",
+  "failure_mode": "Invents '1.5x volume' and proceeds without confirmation.",
+  "assertions": [
+    "ask_threshold",
+    "ask_timeframe",
+    "ask_exit",
+    "ask_risk"
+  ],
+  "severity": "critical"
+}

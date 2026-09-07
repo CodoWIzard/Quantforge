@@ -1,0 +1,15 @@
+{
+  "agent": "strategy-specialist",
+  "description": "Tool allowlist for strategy-specialist. Least privilege per \u00a734 - no generic shell, URL or secret access.",
+  "allowed_tools": [
+    "validate_spec",
+    "list_supported_indicators"
+  ],
+  "forbidden": [
+    "shell",
+    "http_request",
+    "read_secret",
+    "place_order",
+    "write_dataset"
+  ]
+}

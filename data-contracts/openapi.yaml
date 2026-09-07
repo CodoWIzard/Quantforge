@@ -1,0 +1,100 @@
+openapi: 3.1.0
+info:
+  title: QuantForge API
+  version: 0.1.0
+  description: >
+    HTTP surface of apps/api (§13). Contract-first: apps/web and the agent tool
+    definitions are generated against this file. Breaking changes need an ADR (§40).
+    NOTE: this is the agreed shape, not an implemented service. Blueprint Part X
+    forbids building the web app before the research loop is proven.
+
+servers:
+  - url: http://localhost:8000
+    description: local dev
+
+tags:
+  - name: strategies
+  - name: runs
+  - name: deployments
+
+paths:
+  /health:
+    get:
+      summary: Liveness probe
+      responses: { "200": { description: ok } }
+
+  /strategies:
+    post:
+      tags: [strategies]
+      summary: Create a new StrategySpec version
+      description: Body MUST validate against strategy-spec.schema.json. Invalid or
+        underspecified specs are rejected 422 - never defaulted.
+      responses:
+        "201": { description: created }
+        "422": { description: schema-invalid or missing required parameter }
+
+  /strategies/{strategy_id}/versions:
+    get:
+      tags: [strategies]
+      summary: List versions of a strategy
+      parameters:
+        - { name: strategy_id, in: path, required: true, schema: { type: string } }
+      responses: { "200": { description: ok } }
+
+  /runs/backtest:
+    post:
+      tags: [runs]
+      summary: Dispatch a deterministic backtest job
+      description: Enqueues a Container Apps Job (ADR-009). Returns immediately with a
+        run_id; results are polled. Charged against Research Credits (§48).
+      responses:
+        "202": { description: accepted, returns run_id }
+        "402": { description: insufficient credits }
+
+  /runs/{run_id}:
+    get:
+      tags: [runs]
+      summary: Fetch a BacktestResult
+      parameters:
+        - { name: run_id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        "200": { description: BacktestResult document }
+        "404": { description: unknown run }
+
+  /runs/{run_id}/validation:
+    post:
+      tags: [runs]
+      summary: Launch the validation battery (§23) against a completed run
+      parameters:
+        - { name: run_id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses: { "202": { description: accepted } }
+
+  /deployments:
+    post:
+      tags: [deployments]
+      summary: Deploy an APPROVED strategy version to paper execution
+      description: Requires an explicit human approval record (§11). The executor loads
+        the immutable spec; it cannot be mutated while running (§24).
+      responses:
+        "201": { description: deployed }
+        "403": { description: strategy version not approved }
+
+  /deployments/{id}/kill:
+    post:
+      tags: [deployments]
+      summary: Emergency kill switch
+      description: Fails closed - cancels working orders and blocks new order intents.
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string } }
+      responses: { "200": { description: halted } }
+
+components:
+  schemas:
+    StrategySpec:
+      $ref: "./strategy-spec.schema.json"
+    BacktestResult:
+      $ref: "./backtest-result.schema.json"
+    RunManifest:
+      $ref: "./run-manifest.schema.json"
+    MarketEvent:
+      $ref: "./market-event.schema.json"

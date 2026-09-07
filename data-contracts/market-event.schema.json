@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quantforge.dev/contracts/v1/market-event.schema.json",
+  "title": "MarketEvent",
+  "description": "One normalised market observation. Produced by services/market-collector, consumed identically by the backtester (replayed from Parquet) and the paper executor (live WebSocket). Same shape both paths, so a strategy cannot behave differently in backtest vs paper.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "event_type",
+    "symbol",
+    "ts_utc",
+    "received_utc"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "candle",
+        "trade",
+        "book_delta",
+        "funding"
+      ]
+    },
+    "symbol": {
+      "type": "string",
+      "enum": [
+        "BTC-PERP",
+        "ETH-PERP"
+      ]
+    },
+    "ts_utc": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Exchange event time, UTC, always timezone-aware. Ordering key."
+    },
+    "received_utc": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Local ingest time. ts_utc vs received_utc gap feeds the stale-data check (\u00a724)."
+    },
+    "sequence": {
+      "type": "integer",
+      "description": "Exchange sequence number where available; drives gap/duplicate detection."
+    },
+    "candle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "timeframe",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume"
+      ],
+      "properties": {
+        "timeframe": {
+          "type": "string",
+          "enum": [
+            "1m",
+            "5m",
+            "15m"
+          ]
+        },
+        "open": {
+          "type": "number"
+        },
+        "high": {
+          "type": "number"
+        },
+        "low": {
+          "type": "number"
+        },
+        "close": {
+          "type": "number"
+        },
+        "volume": {
+          "type": "number",
+          "minimum": 0
+        },
+        "trades": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "closed": {
+          "type": "boolean",
+          "description": "False = still forming. Strategies may only act on closed bars."
+        }
+      }
+    },
+    "trade": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "price",
+        "size",
+        "side"
+      ],
+      "properties": {
+        "price": {
+          "type": "number"
+        },
+        "size": {
+          "type": "number",
+          "minimum": 0
+        },
+        "side": {
+          "type": "string",
+          "enum": [
+            "buy",
+            "sell"
+          ]
+        }
+      }
+    },
+    "funding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rate"
+      ],
+      "properties": {
+        "rate": {
+          "type": "number"
+        },
+        "interval_hours": {
+          "type": "number"
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "description": "Raw layer keeps provenance (\u00a726). Never drop this on the curated path.",
+      "properties": {
+        "source": {
+          "type": "string",
+          "examples": [
+            "kraken-futures-ws"
+          ]
+        },
+        "raw_partition": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "id": "004-dataset-gap",
+  "agent": "research-director",
+  "source": "Blueprint \u00a718 example evaluation cases",
+  "scenario": "The resolved dataset has a 3-hour gap on 2026-07-14.",
+  "expected_behaviour": "Stop or explicitly mark and exclude the affected period; request a coverage report.",
+  "failure_mode": "Interpolates silently and continues.",
+  "assertions": [
+    "detect_gap",
+    "request_coverage",
+    "no_silent_fill"
+  ],
+  "severity": "critical"
+}

@@ -1,0 +1,18 @@
+{
+  "agent": "research-director",
+  "description": "Tool allowlist for research-director. Least privilege per \u00a734 - no generic shell, URL or secret access.",
+  "allowed_tools": [
+    "compile_strategy",
+    "launch_backtest",
+    "launch_validation",
+    "fetch_result",
+    "delegate_to_specialist"
+  ],
+  "forbidden": [
+    "shell",
+    "http_request",
+    "read_secret",
+    "place_order",
+    "write_dataset"
+  ]
+}
