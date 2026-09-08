@@ -171,10 +171,24 @@ def test_persona_states_chat_cannot_write_code():
     assert "There is no background process" in text
 
 
-def test_persona_admits_no_conversation_memory():
-    """Each message is a cold start. Denying a quoted earlier answer confuses users."""
+def test_persona_does_not_claim_amnesia():
+    """The bot told a user "I have no memory between messages" mid-conversation.
+
+    True of the process, useless as an answer: recent_context() now reads the
+    channel back and injects it, so the persona must forbid the disclaimer and
+    name the two limits that are still real (window size, missing transcript).
+    """
     text = (BOTS_DIR / "bots.py").read_text()
-    assert "NO memory of previous messages" in text
+    assert "NEVER tell anyone you have no memory between messages" in text
+    assert "You CAN see the recent conversation" in text
+    assert "NO memory of previous messages" not in text, "old amnesia rule is back"
+
+
+def test_history_is_injected_into_the_prompt():
+    """A persona that claims memory without a transcript would just hallucinate."""
+    text = (BOTS_DIR / "bots.py").read_text()
+    assert "async def recent_context(" in text
+    assert 'f"{history}\\n"' in text
 
 
 def test_timeout_message_blames_the_bot_not_the_user():

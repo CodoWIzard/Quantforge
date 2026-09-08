@@ -40,6 +40,11 @@ LOGDIR.mkdir(exist_ok=True)
 
 HERMES_TIMEOUT = 420  # long pastes need headroom; Discord edits are cheap
 MAX_DISCORD = 1900
+# Conversation memory: how far back to read the channel. 25 messages covers a
+# working exchange without dragging in yesterday's unrelated thread, and the
+# character budget stops one giant paste from crowding out the repo facts.
+HISTORY_LIMIT = 25
+HISTORY_BUDGET = 6000
 
 
 def load_env() -> dict[str, str]:
@@ -216,6 +221,65 @@ def repo_facts() -> str:
         )
 
 
+async def recent_context(channel: object, me: object,
+                         skip_id: int | None = None) -> str:
+    """The last few messages of this channel, as a transcript.
+
+    WHY THIS EXISTS: each reply is a fresh `hermes -z` process, so the model has
+    no state of its own. Without this the bot answered "I have no memory between
+    messages" to a user who had just spent five messages building up context -
+    technically true of the process, useless to the human.
+
+    Discord itself is the memory. Reading the channel back beats resuming a
+    stored session: it survives restarts, it cannot drift from what the user can
+    see on screen, and both bots read the same thread so neither invents a
+    version of the conversation the other did not have.
+
+    Best-effort by design. No history (DM, missing permission, API hiccup) means
+    a degraded answer, never a failed one.
+    """
+    if not isinstance(channel, discord.abc.Messageable):
+        return ""
+    try:
+        msgs = [m async for m in channel.history(limit=HISTORY_LIMIT)]
+    except (discord.DiscordException, OSError):
+        log.warning("could not read channel history", exc_info=True)
+        return ""
+
+    lines: list[str] = []
+    for m in msgs:  # newest first
+        if skip_id is not None and m.id == skip_id:
+            continue
+        text = m.clean_content.strip()
+        if not text:
+            text = "[attachment or embed]"
+        if len(text) > 700:
+            text = text[:700] + " …[truncated]"
+        if me is not None and m.author.id == getattr(me, "id", None):
+            who = "YOU"
+        elif m.author.bot:
+            who = f"{m.author.display_name} (the other bot)"
+        else:
+            who = m.author.display_name
+        lines.append(f"{who}: {text}")
+        if sum(len(x) for x in lines) > HISTORY_BUDGET:
+            break
+
+    if not lines:
+        return ""
+    lines.reverse()  # chronological
+    return (
+        "RECENT CONVERSATION IN THIS CHANNEL (oldest first, read from Discord "
+        "just now - this is your memory of what was said):\n"
+        + "\n".join(lines)
+        + "\n\nUse it: follow up on what was already discussed, do not re-introduce\n"
+          "yourself, and do not ask for something already given above. Lines marked\n"
+          "YOU are your own earlier replies - own them. If an earlier reply of yours\n"
+          "is contradicted by the repo files you can read now, the files win: say so\n"
+          "plainly and correct it rather than defending the old answer.\n"
+    )
+
+
 # ---------------------------------------------------------------- personas
 
 CONTEXT = """You are part of QuantForge: an AI-assisted trading strategy research,
@@ -253,10 +317,17 @@ Absolute rules you must never break:
   it does not exist - say so. Inventing a plausible-sounding path is a serious
   failure: it sends people looking for files that were never written and fakes an
   audit trail.
-- You have NO memory of previous messages. Each question is a cold start. If someone
-  quotes something "you said", treat it as their accurate report - do not deny it and
-  do not pretend to recall it. Re-derive the answer from the facts below and continue
-  from where they say you left off.
+- You CAN see the recent conversation: the last messages of this channel are read
+  from Discord and included below. Treat that transcript as your memory and continue
+  the thread naturally. NEVER tell anyone you have no memory between messages or that
+  each question is a cold start - that is a statement about your plumbing, not an
+  answer, and it is wrong now.
+  Two honest limits remain, and you state THOSE instead when they bite: you see only
+  the recent window, so anything older than the transcript is genuinely gone and you
+  should ask them to re-paste it; and if the transcript is missing entirely you must
+  say you cannot see the history right now rather than guess at what was said.
+  If someone quotes something "you said" that is not in the transcript, treat it as
+  their accurate report - do not deny it and do not pretend to recall it.
 - Distinguish what EXISTS from what is PLANNED. Most of this repo is scaffolding:
   directories and documented contracts whose Python bodies still raise
   NotImplementedError. Never imply a component runs when only its shape is agreed.
@@ -302,10 +373,11 @@ _sem = asyncio.Semaphore(2)  # shared OAuth token; avoid hammering it
 
 
 async def ask_hermes(persona: str, question: str, who: str, channel: str,
-                     bot: str = "director") -> str:
+                     bot: str = "director", history: str = "") -> str:
     prompt = (
         f"{persona}\n\n"
         f"{repo_facts()}\n"
+        f"{history}\n"
         f"You are running inside a scratch checkout of this repository at the path\n"
         f"below. You have file-read and search tools: OPEN the files rather than\n"
         f"guessing at their contents. Any write you make here is discarded and never\n"
@@ -375,10 +447,11 @@ class QFBot(discord.Client):
         @app_commands.describe(question="What do you want to know?")
         async def _ask(interaction: discord.Interaction, question: str):
             await interaction.response.defer(thinking=True)
+            hist = await recent_context(interaction.channel, self.user)
             ans = await ask_hermes(self.persona, question,
                                    interaction.user.display_name,
                                    getattr(interaction.channel, "name", "dm"),
-                                   bot=self.name)
+                                   bot=self.name, history=hist)
             await interaction.followup.send(ans[:MAX_DISCORD])
 
         @self.tree.command(name="build",
@@ -398,10 +471,14 @@ class QFBot(discord.Client):
                     self.log.warning("progress send failed", exc_info=True)
 
             self.log.info("BUILD by %s: %s", interaction.user.display_name, task[:120])
+            # A /build task is usually the tail of a conversation ("do that, but
+            # for ETH"). Without the transcript the builder would have to guess
+            # what "that" was - and guessing is exactly what it must not do.
+            hist = await recent_context(interaction.channel, self.user)
             res = await builder.build(
                 repo=REPO, bot=self.name, persona=self.persona, task=task,
                 who=interaction.user.display_name, hermes_bin=HERMES,
-                progress=progress,
+                progress=progress, history=hist,
             )
             head = "✅" if res.ok else "⚠️"
             await interaction.followup.send(f"{head} {res.summary}"[:MAX_DISCORD])
@@ -410,13 +487,14 @@ class QFBot(discord.Client):
                            guild=guild)
         async def _status(interaction: discord.Interaction):
             await interaction.response.defer(thinking=True)
+            hist = await recent_context(interaction.channel, self.user)
             ans = await ask_hermes(
                 self.persona,
                 "Give a short status of the QuantForge project: current phase, "
                 "what exists, what the next exit gate is.",
                 interaction.user.display_name,
                 getattr(interaction.channel, "name", "dm"),
-                bot=self.name)
+                bot=self.name, history=hist)
             await interaction.followup.send(ans[:MAX_DISCORD])
 
         self.tree.copy_global_to(guild=guild)
@@ -450,9 +528,12 @@ class QFBot(discord.Client):
         self.log.info("#%s %s: %s", getattr(msg.channel, "name", "?"),
                       msg.author.display_name, q[:80])
         async with msg.channel.typing():
+            # skip_id: the message being answered is passed as the question, so
+            # including it in the transcript would show it to the model twice.
+            hist = await recent_context(msg.channel, me, skip_id=msg.id)
             ans = await ask_hermes(self.persona, q, msg.author.display_name,
                                    getattr(msg.channel, "name", "dm"),
-                                   bot=self.name)
+                                   bot=self.name, history=hist)
         await msg.reply(ans[:MAX_DISCORD], mention_author=False)
 
 

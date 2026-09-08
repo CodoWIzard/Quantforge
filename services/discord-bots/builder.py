@@ -200,6 +200,7 @@ async def build(
     who: str,
     hermes_bin: str,
     progress=None,
+    history: str = "",
 ) -> BuildResult:
     """Run one supervised build. Returns a BuildResult; never raises for a
     failed build (only for a broken environment)."""
@@ -228,6 +229,7 @@ async def build(
         try:
             prompt = (
                 f"{persona}\n\n{BUILD_RULES}\n"
+                f"{history}\n"
                 f"Requested by {who} via Discord.\n"
                 f"Branch: {branch}\n"
                 f"TASK:\n{task}\n"
