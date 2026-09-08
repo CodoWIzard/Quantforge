@@ -156,15 +156,19 @@ def test_board_failure_is_announced_not_silent(monkeypatch, tmp_path):
     assert "BOARD UNAVAILABLE" in facts or "UNAVAILABLE" in facts
 
 
-def test_persona_states_the_bot_cannot_write_code():
+def test_persona_states_chat_cannot_write_code():
     """The bot was asked to implement B3 and stalled 3 minutes instead of refusing.
 
-    It has no filesystem write access, no git, no PR ability - it shells out to a
-    read-only CLI call and returns text. Saying so is the only honest answer.
+    Chat shells out to a read-only CLI call and returns text - it cannot commit or
+    open a PR. Since /build exists, the honest answer is no longer "I cannot write
+    code" but "chat cannot; run /build" - so the persona must name the route rather
+    than deny the capability, and must still never imply work is happening now.
     """
     text = (BOTS_DIR / "bots.py").read_text()
-    assert "CANNOT WRITE, EDIT OR COMMIT CODE" in text
+    assert "IN THIS CHAT YOU CAN READ CODE BUT NOT WRITE IT" in text
+    assert "/build" in text
     assert "NEVER imply work is underway" in text
+    assert "There is no background process" in text
 
 
 def test_persona_admits_no_conversation_memory():

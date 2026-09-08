@@ -25,6 +25,7 @@ import re
 import shutil
 from pathlib import Path
 
+import builder
 import discord
 from discord import app_commands
 
@@ -235,17 +236,23 @@ Absolute rules you must never break:
 - Paper/demo only. No real money this internship (ADR-002).
 - GitHub is the source of truth, not Discord (ADR-010).
 - Never reveal credentials, tokens or file contents of /root/.config.
-- YOU CANNOT WRITE, EDIT OR COMMIT CODE. You have no filesystem write access, no git
-  access and no ability to open a PR. You are a read-only advisor in a chat window.
-  When asked to "implement", "build", "execute" or "make" something, say plainly that
-  you cannot, then give the exact plan a human or coding agent should follow - files,
-  order, and how to verify. NEVER imply work is underway. NEVER say you will do it.
+- IN THIS CHAT YOU CAN READ CODE BUT NOT WRITE IT. You are in a scratch checkout of
+  the repository with read tools. Open files and quote them - that is expected and
+  much better than guessing. Anything you write here is thrown away when the reply
+  ends, so never claim to have changed, committed or pushed anything from chat, and
+  never describe a file you edited here as if it landed in the repo.
+- To actually change code there is exactly one route: the /build slash command,
+  which runs you on your own branch and opens a pull request for human review.
+  When asked to "implement", "build" or "make" something in chat, say plainly that
+  chat cannot write, and tell them to run /build with the task.
+  NEVER imply work is underway, and NEVER say you will do it yourself later.
   There is no background process; when this reply ends, nothing further happens.
 - NEVER describe repository structure, file paths, ADR numbers, PRs or shipped work
-  from memory or inference. A prompt below contains the ACTUAL layout read from disk.
-  Use ONLY that. If something is not listed there, it does not exist - say so.
-  Inventing a plausible-sounding path is a serious failure: it sends people looking
-  for files that were never written and fakes an audit trail.
+  from memory or inference. A prompt below contains the ACTUAL layout read from disk,
+  and you can read the files themselves. Use ONLY those. If something is in neither,
+  it does not exist - say so. Inventing a plausible-sounding path is a serious
+  failure: it sends people looking for files that were never written and fakes an
+  audit trail.
 - You have NO memory of previous messages. Each question is a cold start. If someone
   quotes something "you said", treat it as their accurate report - do not deny it and
   do not pretend to recall it. Re-derive the answer from the facts below and continue
@@ -265,7 +272,13 @@ a strategy is not credible because it looks good, it is credible because it surv
 out-of-sample testing, cost stress, parameter sensitivity and regime splits.
 
 When given a vague trading idea, your first move is to ask what is undefined:
-entry condition, exit, timeframe, position sizing, risk per trade. Do not guess."""
+entry condition, exit, timeframe, position sizing, risk per trade. Do not guess.
+
+In /build you own the research side of the tree: research/, experiments/,
+packages/strategy_schema/, packages/exchange_contracts/, data-contracts/, tests/
+and docs/. Infrastructure, CI and the bot service belong to the Admin bot - if a
+task needs those, say so and let Admin build it. A build that strays outside your
+scope is opened as a draft PR and flagged, so stay inside it."""
 
 ADMIN = CONTEXT + """
 
@@ -274,7 +287,13 @@ issues, CI, Azure resources, cost telemetry and server administration. You answe
 questions about how the project is organised and what state it is in.
 
 You are not the research brain. Route strategy and evidence questions to the
-Research Director."""
+Research Director.
+
+In /build you own the operational side of the tree: services/, scripts/, infra/,
+.github/, packages/risk_engine/, tests/, docs/ and the dependency manifests.
+Strategy code, research and experiments belong to the Research Director - if a
+task needs those, say so and let the Director build it. A build that strays
+outside your scope is opened as a draft PR and flagged, so stay inside it."""
 
 # ---------------------------------------------------------------- backend
 
@@ -282,31 +301,44 @@ HERMES = shutil.which("hermes") or "/usr/local/bin/hermes"
 _sem = asyncio.Semaphore(2)  # shared OAuth token; avoid hammering it
 
 
-async def ask_hermes(persona: str, question: str, who: str, channel: str) -> str:
+async def ask_hermes(persona: str, question: str, who: str, channel: str,
+                     bot: str = "director") -> str:
     prompt = (
         f"{persona}\n\n"
         f"{repo_facts()}\n"
-        f"NOTE: you cannot write files or run commands. Advise; do not claim to build.\n"
+        f"You are running inside a scratch checkout of this repository at the path\n"
+        f"below. You have file-read and search tools: OPEN the files rather than\n"
+        f"guessing at their contents. Any write you make here is discarded and never\n"
+        f"reaches the repo, so do not claim to have changed anything.\n"
         f"Discord #{channel} | asked by {who}\n"
         f"Question: {question}\n\n"
         f"Reply with the message text only."
     )
-    async with _sem:
+    async with _sem, builder.read_lock(bot):
+        tree = await builder.ensure_read_tree(REPO, bot)
+        cwd = tree or REPO
         try:
             proc = await asyncio.create_subprocess_exec(
                 HERMES, "-z", prompt,
+                "-t", "file",
+                # Load-bearing: without these the CLI restores a previous
+                # session's cwd and the "read-only" chat call ends up sitting in
+                # the shared checkout instead of the disposable read tree.
+                "--in", str(cwd), "--no-restore-cwd",
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                cwd=str(REPO),
+                cwd=str(cwd),
             )
-            out, err = await asyncio.wait_for(proc.communicate(), timeout=HERMES_TIMEOUT)
+            out, err = await asyncio.wait_for(proc.communicate(),
+                                              timeout=HERMES_TIMEOUT)
         except TimeoutError:
             log.warning("hermes timeout after %ss", HERMES_TIMEOUT)
             return (
-                f"I timed out after {HERMES_TIMEOUT // 60} minutes — that's my failure, "
-                "not a problem with your question. Nothing was written or changed; I have "
-                "no memory of this attempt, so re-send and I'll start clean. If it was a "
-                "long paste, sending just the specific ask usually gets through."
+                f"I timed out after {HERMES_TIMEOUT // 60} minutes — that's "
+                "my failure, not a problem with your question. Nothing was written "
+                "or changed; I have no memory of this attempt, so re-send and "
+                "I'll start clean. If it was a long paste, sending just the "
+                "specific ask usually gets through."
             )
         except Exception as exc:  # noqa: BLE001
             log.exception("hermes failed")
@@ -345,8 +377,34 @@ class QFBot(discord.Client):
             await interaction.response.defer(thinking=True)
             ans = await ask_hermes(self.persona, question,
                                    interaction.user.display_name,
-                                   getattr(interaction.channel, "name", "dm"))
+                                   getattr(interaction.channel, "name", "dm"),
+                                   bot=self.name)
             await interaction.followup.send(ans[:MAX_DISCORD])
+
+        @self.tree.command(name="build",
+                           description="Implement a change on a branch and open a PR",
+                           guild=guild)
+        @app_commands.describe(
+            task="What to implement. Be specific: files, behaviour, tests.")
+        async def _build(interaction: discord.Interaction, task: str):
+            await interaction.response.defer(thinking=True)
+            chan = interaction.channel
+
+            async def progress(msg: str) -> None:
+                try:
+                    if isinstance(chan, discord.abc.Messageable):
+                        await chan.send(f"🔨 **{self.name}** — {msg[:500]}")
+                except discord.DiscordException:
+                    self.log.warning("progress send failed", exc_info=True)
+
+            self.log.info("BUILD by %s: %s", interaction.user.display_name, task[:120])
+            res = await builder.build(
+                repo=REPO, bot=self.name, persona=self.persona, task=task,
+                who=interaction.user.display_name, hermes_bin=HERMES,
+                progress=progress,
+            )
+            head = "✅" if res.ok else "⚠️"
+            await interaction.followup.send(f"{head} {res.summary}"[:MAX_DISCORD])
 
         @self.tree.command(name="status", description="Project status",
                            guild=guild)
@@ -357,7 +415,8 @@ class QFBot(discord.Client):
                 "Give a short status of the QuantForge project: current phase, "
                 "what exists, what the next exit gate is.",
                 interaction.user.display_name,
-                getattr(interaction.channel, "name", "dm"))
+                getattr(interaction.channel, "name", "dm"),
+                bot=self.name)
             await interaction.followup.send(ans[:MAX_DISCORD])
 
         self.tree.copy_global_to(guild=guild)
@@ -392,7 +451,8 @@ class QFBot(discord.Client):
                       msg.author.display_name, q[:80])
         async with msg.channel.typing():
             ans = await ask_hermes(self.persona, q, msg.author.display_name,
-                                   getattr(msg.channel, "name", "dm"))
+                                   getattr(msg.channel, "name", "dm"),
+                                   bot=self.name)
         await msg.reply(ans[:MAX_DISCORD], mention_author=False)
 
 

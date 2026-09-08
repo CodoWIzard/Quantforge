@@ -41,7 +41,28 @@ def body(src: str, fn: ast.AST) -> str:
 def test_hermes_called_without_invalid_toolset_flag(src: str) -> None:
     """`-t none` is rejected by the hermes CLI and silently yields no output."""
     assert '"-t", "none"' not in src
-    assert not re.search(r'HERMES,\s*"-z",\s*prompt,\s*"-t"', src)
+
+
+def test_chat_path_gets_read_tools_only(src: str, funcs) -> None:
+    """Chat may READ the repo. It must never get write/exec tools: only /build,
+    which runs in a disposable worktree and opens a PR, is allowed to change code."""
+    seg = body(src, funcs["ask_hermes"])
+    assert '"-t", "file"' in seg, "chat path must request the read-only file toolset"
+    for banned in ("terminal", "code_execution", "--yolo"):
+        assert banned not in seg, f"chat path must not enable {banned}"
+
+
+def test_chat_path_runs_in_disposable_worktree(src: str, funcs) -> None:
+    """Never run chat in the shared checkout: a stray write would land in a
+    human's working copy.
+
+    cwd= alone does not hold: the hermes CLI restores a previous session's
+    recorded cwd on startup, which walks the process back into the main
+    checkout. --in + --no-restore-cwd are what actually pin it.
+    """
+    seg = body(src, funcs["ask_hermes"])
+    assert "ensure_read_tree" in seg and "read_lock" in seg
+    assert '"--in", str(cwd), "--no-restore-cwd"' in seg
 
 
 def test_hermes_invoked_via_argv_not_shell(src: str) -> None:

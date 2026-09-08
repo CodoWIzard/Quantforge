@@ -39,6 +39,9 @@ data/
 *.tfvars
 !*.tfvars.example
 
+# Bot build worktrees (services/discord-bots/builder.py)
+.worktrees/
+
 # Artifacts
 artifacts/
 runs/
