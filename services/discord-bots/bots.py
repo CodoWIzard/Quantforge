@@ -48,12 +48,24 @@ HISTORY_BUDGET = 6000
 
 
 def load_env() -> dict[str, str]:
+    """Parse the credentials file.
+
+    Values may be bare or quoted, and may carry a leading `export`: a token
+    pasted with quotes reaches discord.py as `"MTU..."` and fails with the
+    unhelpful "Improper token has been passed", which reads like a bad token
+    rather than a stray pair of quote characters. Strip both forms here.
+    """
     env: dict[str, str] = {}
-    for line in (CFG / "discord.env").read_text().splitlines():
-        line = line.strip()
+    for raw in (CFG / "discord.env").read_text().splitlines():
+        line = raw.strip()
+        if line.startswith("export "):
+            line = line[len("export "):].strip()
         if line and not line.startswith("#") and "=" in line:
             k, v = line.split("=", 1)
-            env[k.strip()] = v.strip()
+            v = v.strip()
+            if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
+                v = v[1:-1]
+            env[k.strip()] = v
     return env
 
 

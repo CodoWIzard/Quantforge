@@ -133,6 +133,25 @@ def test_builder_is_started_with_its_own_token() -> None:
     assert '"DISCORD_BUILDER_BOT_TOKEN"' in src
 
 
+@pytest.mark.parametrize("raw,expected", [
+    ('K=bare', "bare"),
+    ('K="quoted"', "quoted"),
+    ("K='single'", "single"),
+    ('export K="exported"', "exported"),
+    ('K=  spaced  ', "spaced"),
+    ('K="', '"'),                       # too short to be a quote pair
+])
+def test_load_env_strips_quotes_and_export(tmp_path, monkeypatch,
+                                           raw: str, expected: str) -> None:
+    """REGRESSION: a token pasted WITH quotes was stored verbatim, and discord.py
+    rejected it as "Improper token has been passed" - which reads like a bad
+    credential and sent debugging in the wrong direction for a working token."""
+    cfg = tmp_path
+    (cfg / "discord.env").write_text(f"# comment\n\n{raw}\n")
+    monkeypatch.setattr(bots, "CFG", cfg)
+    assert bots.load_env()["K"] == expected
+
+
 def test_missing_builder_token_fails_loudly() -> None:
     """A bot that silently does not start looks online-but-deaf to the humans."""
     src = (BOTS_DIR / "bots.py").read_text()
