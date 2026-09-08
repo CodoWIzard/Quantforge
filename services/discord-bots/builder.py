@@ -42,7 +42,8 @@ GIT_TIMEOUT = 180
 BUILD_LOCK = asyncio.Semaphore(1)
 
 # Paths each persona may change. Enforced after the fact on the real diff, not
-# left to the model's goodwill — the prompt asks, this checks.
+# left to the model's goodwill - the prompt asks, this checks. Registered in
+# SCOPES below; adding a bot without a scope entry gives it nothing, by design.
 DIRECTOR_SCOPE = (
     "research/", "experiments/", "packages/strategy_schema/",
     "packages/exchange_contracts/", "data-contracts/", "tests/", "docs/",
@@ -51,8 +52,15 @@ ADMIN_SCOPE = (
     "services/", "scripts/", "infra/", ".github/", "docs/", "tests/",
     "packages/risk_engine/", "pyproject.toml", "requirements.txt",
 )
+# The Builder writes specs, schema and fixtures - the StrategySpec contract and
+# the corpus that exercises it. Deliberately NARROWER than the Director: it must
+# not touch the backtester or validation, because a bot that both authors a spec
+# and edits the engine that judges it can make its own output look correct.
+BUILDER_SCOPE = (
+    "packages/strategy_schema/", "data-contracts/", "experiments/", "tests/",
+)
 
-# Never, for either bot, on any branch. A build that touches one of these is
+# Never, for any bot, on any branch. A build that touches one of these is
 # aborted and discarded rather than pushed for review: the point of review is
 # lost if the diff can already have leaked a credential into git history.
 FORBIDDEN = (
@@ -152,8 +160,20 @@ def slugify(text: str, limit: int = 32) -> str:
     return (s[:limit].rstrip("-")) or "task"
 
 
+SCOPES: dict[str, tuple[str, ...]] = {
+    "director": DIRECTOR_SCOPE,
+    "admin": ADMIN_SCOPE,
+    "builder": BUILDER_SCOPE,
+}
+
+
 def scope_for(bot: str) -> tuple[str, ...]:
-    return DIRECTOR_SCOPE if bot == "director" else ADMIN_SCOPE
+    """Explicit lookup, never a fallback. An unknown bot gets the EMPTY scope, so
+    every file it touches is flagged and the PR opens as a draft. A two-way
+    `if bot == "director" else ADMIN_SCOPE` silently handed any new bot the
+    Admin's write scope - the failure mode of a mistyped name must be too little
+    authority, not someone else's."""
+    return SCOPES.get(bot, ())
 
 
 def classify(files: list[str], bot: str) -> tuple[list[str], list[str]]:

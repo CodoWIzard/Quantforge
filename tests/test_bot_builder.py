@@ -44,6 +44,42 @@ def test_secret_shaped_paths_are_forbidden(path: str) -> None:
     assert forbidden == [path], f"{path} must be refused, not reviewed"
 
 
+def test_unknown_bot_gets_no_write_scope() -> None:
+    """A mistyped or newly added bot name must fall to the EMPTY scope, not
+    inherit the Admin's. Too little authority is a draft PR; too much is a bot
+    quietly editing infrastructure it was never granted."""
+    assert builder.scope_for("typo-bot") == ()
+    _, outside = builder.classify(["services/discord-bots/bots.py"], "typo-bot")
+    assert outside == ["services/discord-bots/bots.py"]
+
+
+def test_every_running_bot_has_an_explicit_scope() -> None:
+    """bots.py starts three personas; a persona with no SCOPES entry can never
+    open a clean PR, which would be a silent, confusing failure."""
+    for name in ("director", "admin", "builder"):
+        assert builder.scope_for(name), f"{name} has no write scope"
+
+
+def test_builder_cannot_edit_the_engine_that_judges_its_specs() -> None:
+    """Authoring a StrategySpec and editing the backtester/validation that grades
+    it is self-marking. Those paths belong to the Director."""
+    for path in ("research/backtester/engine.py",
+                 "research/validation/verdict.py"):
+        _, outside = builder.classify([path], "builder")
+        assert outside == [path]
+
+
+@pytest.mark.parametrize("path", [
+    "packages/strategy_schema/models.py",
+    "data-contracts/strategy_spec.json",
+    "experiments/002-strategy-compiler/fixtures.json",
+    "tests/test_strategy_compiler.py",
+])
+def test_builder_owns_spec_schema_and_fixtures(path: str) -> None:
+    forbidden, outside = builder.classify([path], "builder")
+    assert not forbidden and not outside
+
+
 @pytest.mark.parametrize("bot,path", [
     ("director", "research/backtester/engine.py"),
     ("director", "experiments/003-x/RESULT.md"),
