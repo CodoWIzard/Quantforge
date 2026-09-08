@@ -59,6 +59,10 @@ ADMIN_SCOPE = (
 BUILDER_SCOPE = (
     "packages/strategy_schema/", "data-contracts/", "experiments/", "tests/",
 )
+# QA writes the validators and fixtures that make its checks executable, but not
+# the schema or experiments it reviews - same self-marking fence as the Builder,
+# pointed the other way.
+QA_SCOPE = ("tests/", "data-contracts/")
 
 # Never, for any bot, on any branch. A build that touches one of these is
 # aborted and discarded rather than pushed for review: the point of review is
@@ -164,6 +168,7 @@ SCOPES: dict[str, tuple[str, ...]] = {
     "director": DIRECTOR_SCOPE,
     "admin": ADMIN_SCOPE,
     "builder": BUILDER_SCOPE,
+    "qa": QA_SCOPE,
 }
 
 
