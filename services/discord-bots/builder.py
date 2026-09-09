@@ -68,6 +68,11 @@ QA_SCOPE = ("tests/", "data-contracts/")
 # A critic that can edit what it judges is marking its own homework from the
 # other direction.
 RISK_SCOPE = ("docs/", "tests/")
+# The Strategy Analyst authors specs and the fixtures that exercise them, but
+# NOT packages/strategy_schema/ - the schema its own output is validated
+# against - and not research/, the backtester that grades the idea. An author
+# who can widen the definition of "valid" passes every spec it writes.
+ANALYST_SCOPE = ("experiments/", "data-contracts/", "tests/")
 
 # Never, for any bot, on any branch. A build that touches one of these is
 # aborted and discarded rather than pushed for review: the point of review is
@@ -175,6 +180,7 @@ SCOPES: dict[str, tuple[str, ...]] = {
     "builder": BUILDER_SCOPE,
     "qa": QA_SCOPE,
     "risk": RISK_SCOPE,
+    "analyst": ANALYST_SCOPE,
 }
 
 

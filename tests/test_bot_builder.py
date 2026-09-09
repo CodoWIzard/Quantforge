@@ -57,7 +57,7 @@ def test_every_running_bot_has_an_explicit_scope() -> None:
     """Every persona bots.py starts must have a SCOPES entry; a persona with no
     entry can never open a clean PR, which would be a silent, confusing
     failure."""
-    for name in ("director", "admin", "builder", "qa", "risk"):
+    for name in ("director", "admin", "builder", "qa", "risk", "analyst"):
         assert builder.scope_for(name), f"{name} has no write scope"
 
 
