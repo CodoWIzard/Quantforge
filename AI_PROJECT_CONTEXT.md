@@ -13,7 +13,7 @@ including the ability to REJECT a bad strategy.
 - BTC and ETH perpetual futures, ONE exchange (Kraken / Kraken derivatives demo)
 - Intraday timeframes, roughly 1m to 15m. No HFT.
 - Paper/demo execution only. No public real-money execution.
-- Cloud direction: Microsoft Azure + Microsoft Foundry
+- Cloud direction: Microsoft Azure. Model provider deliberately unpinned.
 - Two developers, separate AIOS environments, 5 months
 
 ## Architecture rules (non-negotiable)
@@ -49,7 +49,7 @@ See docs/decisions/. ADR-001 .. ADR-010 are the governing baseline decisions.
 Tests + docs + security considerations + observability + reproducibility.
 
 ## Ownership split (suggested, not a wall)
-- Developer A — Azure/Foundry lead: Azure resources, Terraform, Foundry agents/evals,
+- Developer A — infrastructure lead: cloud resources, Terraform, agent configs/evals,
   secrets, monitoring, deployments, cost telemetry.
 - Developer B — trading/product lead: market ingestion, StrategySpec/compiler,
   backtesting/validation, paper execution, web product.

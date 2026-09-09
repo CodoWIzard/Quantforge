@@ -5,7 +5,7 @@
   the Netherlands and whether it exposes the same order API surface as live.
   (Note: Kraken EU derivatives is a separate account + separate API key from Kraken spot.)
 - Azure subscription: student credits vs paid? Determines PostgreSQL and Container Apps cost.
-- Which Foundry region/model deployments are actually available to the subscription.
+- Which model deployments and regions are actually available to the subscription.
 - Backtest engine: constrained internal Python engine first, or adopt LEAN early?
   Blueprint says internal first; revisit if order semantics outgrow it.
 

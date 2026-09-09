@@ -18,4 +18,4 @@ def load_fixtures(agent: str | None = None) -> list[dict]:
 
 def run_suite(agent: str, model: str, smoke: bool = False) -> dict:
     """Return per-fixture scores plus aggregate, and persist the traces."""
-    raise NotImplementedError("Week 9-10: Foundry research loop")
+    raise NotImplementedError("Week 9-10: agent research loop")

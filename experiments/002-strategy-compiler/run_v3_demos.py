@@ -107,7 +107,7 @@ def main() -> int:
         if r["id"] == "I015":
             print("  ^ EXPECTED. The compiler validates STRUCTURED candidates; it does")
             print("    not parse English. Turning a sentence into a candidate dict is the")
-            print("    Strategy Specialist agent's job (Experiment 001, Foundry - not yet")
+            print("    Strategy Specialist agent's job (Experiment 001 - not yet")
             print("    built). Until then the demo supplies the answered candidate by hand,")
             print("    which is exactly what the agent will emit.")
         if "compiled_spec" in r:
@@ -125,7 +125,7 @@ def main() -> int:
     print()
     print("HONEST LIMITATION: no natural language was parsed here. compile_candidate()")
     print("takes a structured dict. The sentence -> dict step belongs to the Strategy")
-    print("Specialist agent and is blocked on Experiment 001 (Foundry). What IS proven:")
+    print("Specialist agent and is blocked on Experiment 001. What IS proven:")
     print("the schema, the clarification rules, the refusal behaviour and the hashing all")
     print("work deterministically, with no model involved.")
     return 0

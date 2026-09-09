@@ -5,7 +5,7 @@
 
 ## Build
 
-Foundry critic receives structured results and requests/analyses robustness tests.
+The critic agent receives structured results and requests/analyses robustness tests.
 
 ## Exit gate
 

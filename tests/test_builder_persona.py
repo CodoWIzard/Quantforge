@@ -93,7 +93,7 @@ def test_direction_values_are_enumerated(persona: str) -> None:
 
 
 def test_later_stage_work_is_refused(persona: str) -> None:
-    for later in ("Azure", "Foundry", "billing", "managed Redis"):
+    for later in ("Azure", "production cloud architecture", "billing", "managed Redis"):
         assert later in persona
 
 

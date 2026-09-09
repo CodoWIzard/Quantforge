@@ -1,11 +1,11 @@
-# Experiment 001 — foundry call
+# Experiment 001 — model call
 
 **Target window:** Weeks 1-2
 **Status:** not started
 
 ## Build
 
-Small local Python script calls one Foundry model and returns structured output.
+Small local Python script calls one hosted LLM and returns structured output.
 
 ## Exit gate
 

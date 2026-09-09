@@ -1,10 +1,11 @@
-# ADR-007: Foundry director + selected specialists + deterministic tools
+# ADR-007: Director + selected specialists + deterministic tools
 
 Status: Accepted
 Date: 2026-08-08 (Master Blueprint v2.0)
 
 ## Decision
-Foundry director + selected specialists + deterministic tools.
+A strong director agent + selected specialists + deterministic tools. The model
+provider is an implementation detail and is deliberately not named here.
 
 ## Rationale
 A strong Research Director coordinating cheaper specialists balances reasoning quality against cost. Adversarial review stays on a strong model.

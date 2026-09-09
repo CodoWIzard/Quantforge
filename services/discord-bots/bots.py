@@ -27,6 +27,8 @@ from pathlib import Path
 
 import builder
 import discord
+import git_facts
+import orchestrator
 from discord import app_commands
 
 # ---------------------------------------------------------------- config
@@ -299,8 +301,9 @@ validation and controlled PAPER execution platform. Five-month internship projec
 two developers, repo at /root/projects/quantforge.
 
 Scope: BTC and ETH perpetual futures on Kraken demo, 1m-15m intraday. No HFT.
-Stack: Azure + Microsoft Foundry, Python deterministic core, PostgreSQL for product
-state, Blob/Parquet for market history. No Managed Redis (ADR-006).
+Stack: Azure, Python deterministic core, PostgreSQL for product state,
+Blob/Parquet for market history. No Managed Redis (ADR-006). The LLM provider is
+an implementation detail: never name a specific model vendor as project stack.
 
 Absolute rules you must never break:
 - You NEVER produce authoritative numeric results. Backtest metrics, P&L, Sharpe,
@@ -425,7 +428,7 @@ draft_created with a 1h timeframe, a 2 percent stop and RSI confirmation is the
 exact failure this role exists to prevent.
 
 Scope discipline: you build inside the prototype/lab on BTC/ETH perps and the
-research loop. Azure, Foundry production architecture, billing, polished SaaS,
+research loop. Azure, production cloud architecture, billing, polished SaaS,
 managed Redis and live-money trading are later-stage work - say so and stop
 rather than designing them. You do not bypass the Director: assignments come
 through them, and if an instruction conflicts with a Director assignment in the
@@ -799,6 +802,64 @@ definition of valid until its output passes. You also cannot write research/ -
 the backtester and validation that grade the idea. A build that strays outside
 your scope is opened as a draft PR and flagged."""
 
+# ---------------------------------------------------------------- registry
+
+# Every persona actually running, keyed by the internal name used in SCOPES and
+# in the orchestrator pipeline. Discord display names are renameable and are NOT
+# the key.
+PERSONAS: dict[str, str] = {
+    "director": DIRECTOR,
+    "admin": ADMIN,
+    "builder": BUILDER,
+    "qa": QA,
+    "risk": RISK,
+    "analyst": ANALYST,
+}
+
+
+def roster_facts() -> str:
+    """Who else is running, injected into every prompt.
+
+    WHY THIS EXISTS: asked "do you understand the updates that just went live?",
+    the Director had no facts about its own siblings. It went looking on disk,
+    found agents/ - instruction files for a FUTURE pipeline, containing
+    research-director/strategy-specialist/critic - and answered from those,
+    reporting that the Risk Reviewer "has no directory and no instructions file
+    on disk". Literally true of agents/, and completely wrong about the live
+    Discord service, where the Risk Reviewer had been running for an hour.
+
+    Two unrelated things were both called "agents" and the bots could only see
+    the wrong one. This states the live roster as fact so no bot has to infer it
+    from a directory listing.
+    """
+    return (
+        "LIVE DISCORD PERSONAS (this service, running right now - trust this over\n"
+        "any directory listing):\n"
+        "  Research_Director (director) - frames research, judges evidence, gives the\n"
+        "    final verdict. Owns research/, experiments/, strategy_schema, contracts.\n"
+        "  Strategy-Analyst (analyst) - turns an idea into ONE StrategySpec. Never\n"
+        "    fills gaps, never substitutes a different strategy.\n"
+        "  Risk-Reviewer (risk) - falsification-first critique of a StrategySpec.\n"
+        "    Never rewrites the strategy, never approves because it reads well.\n"
+        "  QA-bot (qa) - contract and schema checks. Never repairs what it checks.\n"
+        "  Builder_1 (builder) - writes specs, schema and fixtures via /build.\n"
+        "  Admin-bot (admin) - services, CI, infra, ops.\n"
+        "  DO NOT confuse these with the agents/ directory. That holds instruction\n"
+        "  drafts for a future hosted-model pipeline (research-director,\n"
+        "  strategy-specialist, critic) that has NEVER been run against a model. The\n"
+        "  six above are live Discord bots. A role missing from agents/ can still be\n"
+        "  running here - say which of the two you mean.\n"
+        "\n"
+        "HOW WORK MOVES BETWEEN US:\n"
+        "  /research <idea> runs the full chain automatically: Director frames it ->\n"
+        "  Analyst writes the StrategySpec -> Risk Reviewer falsifies it -> Director\n"
+        "  gives the verdict. Each stage posts publicly under its own name.\n"
+        "  Outside a /research run there is NO automatic handoff: a bot only wakes on\n"
+        "  an @mention or a reply, cannot message another bot, and nothing continues\n"
+        "  after its reply ends. If work needs another persona and no run is active,\n"
+        "  say who should be mentioned - never imply you have passed it on.\n"
+    )
+
 # ---------------------------------------------------------------- backend
 
 HERMES = shutil.which("hermes") or "/usr/local/bin/hermes"
@@ -806,10 +867,17 @@ _sem = asyncio.Semaphore(2)  # shared OAuth token; avoid hammering it
 
 
 async def ask_hermes(persona: str, question: str, who: str, channel: str,
-                     bot: str = "director", history: str = "") -> str:
+                     bot: str = "director", history: str = "",
+                     limit: int = MAX_DISCORD) -> str:
+    # Local tree AND remote state. repo_facts answers "what files exist here";
+    # git_facts answers "what actually shipped". Bots that only had the first
+    # reported uncommitted local work as project state and could not see the
+    # branches their own /build runs had pushed.
     prompt = (
         f"{persona}\n\n"
         f"{repo_facts()}\n"
+        f"{roster_facts()}\n"
+        f"{await git_facts.git_facts()}\n"
         f"{history}\n"
         f"You are running inside a scratch checkout of this repository at the path\n"
         f"below. You have file-read and search tools: OPEN the files rather than\n"
@@ -856,10 +924,46 @@ async def ask_hermes(persona: str, question: str, who: str, channel: str,
     text = re.sub(r"^\s*(MEDIA:\S+)\s*$", "", text, flags=re.M).strip()
     if not text:
         return "I got an empty response from the backend."
-    return text[:MAX_DISCORD] + ("\n…(truncated)" if len(text) > MAX_DISCORD else "")
+    # `limit` is a DISPLAY concern, not a content one. A pipeline stage passes its
+    # answer to the next stage, so truncating at Discord's 1900 characters there
+    # would hand the Risk Reviewer a StrategySpec cut off mid-section - the exact
+    # "a summary travelled instead of the work" failure the chain exists to avoid.
+    # Callers that post straight to Discord keep the default; the orchestrator
+    # asks for the whole thing and truncates only when it publishes.
+    return text[:limit] + ("\n…(truncated)" if len(text) > limit else "")
+
+
+def split_message(text: str, limit: int) -> list[str]:
+    """Split a long reply into Discord-sized chunks, preferring line breaks.
+
+    Used by the research pipeline, where truncating is not an option: the channel
+    must show the same text the next stage was given. Splitting on newlines keeps
+    a StrategySpec's sections intact instead of severing one mid-bullet; an
+    unbroken run longer than the limit is hard-split rather than dropped.
+    """
+    if len(text) <= limit:
+        return [text]
+    parts: list[str] = []
+    remaining = text
+    while len(remaining) > limit:
+        cut = remaining.rfind("\n", 0, limit)
+        if cut < limit // 2:  # no usable break point - hard split
+            cut = limit
+        parts.append(remaining[:cut].rstrip())
+        remaining = remaining[cut:].lstrip("\n")
+    if remaining:
+        parts.append(remaining)
+    return parts
 
 
 # ---------------------------------------------------------------- bot
+
+# Live clients by internal name, populated in on_ready. The orchestrator uses
+# this so each stage is posted by the bot that actually produced it: a chain
+# narrated entirely by the Director looks like the Director's opinion of what the
+# others said. Seeing Strategy-Analyst's avatar on the spec is the audit trail.
+LIVE_BOTS: dict[str, discord.Client] = {}
+
 
 class QFBot(discord.Client):
     def __init__(self, name: str, persona: str):
@@ -916,6 +1020,58 @@ class QFBot(discord.Client):
             head = "✅" if res.ok else "⚠️"
             await interaction.followup.send(f"{head} {res.summary}"[:MAX_DISCORD])
 
+        # Only the Director gets /research: it owns the chain and speaks first and
+        # last. Exposing it on every bot would let a mid-chain persona start a run
+        # it is itself a stage of.
+        if self.name == "director":
+            @self.tree.command(
+                name="research",
+                description="Run the full chain: Director -> Analyst -> Risk -> verdict",
+                guild=guild)
+            @app_commands.describe(idea="The trading idea to research, in plain English.")
+            async def _research(interaction: discord.Interaction, idea: str):
+                await interaction.response.defer(thinking=True)
+                chan = interaction.channel
+                who = interaction.user.display_name
+
+                async def post(bot_name: str, label: str, text: str) -> None:
+                    """Publish a stage as the bot that produced it.
+
+                    Each persona has its own gateway connection, so we look up that
+                    client and send through it - the message carries the Analyst's
+                    or Reviewer's own name and avatar. Falling back to the Director
+                    would make the whole chain read as one bot's summary of what the
+                    others supposedly said, which is precisely the fiction this
+                    pipeline exists to replace with a visible trail.
+
+                    Long stages are SPLIT across messages, never truncated: the
+                    reader must see the same spec the next stage received, or the
+                    public trail stops matching the private one.
+                    """
+                    client = LIVE_BOTS.get(bot_name, self)
+                    target = client.get_channel(chan.id) if chan else None
+                    if not isinstance(target, discord.abc.Messageable):
+                        target = chan  # fall back rather than lose the stage
+                    if not isinstance(target, discord.abc.Messageable):
+                        return
+                    for i, part in enumerate(split_message(text, MAX_DISCORD - 80)):
+                        head = f"**{label}**\n" if i == 0 else ""
+                        await target.send(f"{head}{part}")
+
+                self.log.info("RESEARCH RUN by %s: %s", who, idea[:120])
+                await interaction.followup.send(
+                    f"🔬 Research run started on: *{idea[:200]}*\n"
+                    f"Four stages, each posted below as it completes. "
+                    f"This takes a few minutes.")
+                res = await orchestrator.run_pipeline(
+                    idea=idea, who=who,
+                    channel=getattr(chan, "name", "dm"),
+                    ask=ask_hermes, personas=PERSONAS, post=post,
+                )
+                head = "✅" if res.ok else "⚠️"
+                if isinstance(chan, discord.abc.Messageable):
+                    await chan.send(f"{head} {res.summary}"[:MAX_DISCORD])
+
         @self.tree.command(name="status", description="Project status",
                            guild=guild)
         async def _status(interaction: discord.Interaction):
@@ -941,6 +1097,7 @@ class QFBot(discord.Client):
                                       name="BTC/ETH · paper only"))
         me = self.user
         self.log.info("ONLINE as %s (id=%s)", me, me.id if me else "?")
+        LIVE_BOTS[self.name] = self
 
     async def on_message(self, msg: discord.Message) -> None:
         me = self.user

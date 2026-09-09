@@ -8,7 +8,7 @@ provisioned (see `CURRENT_STATE.md`).
 Introduce a module only when the corresponding experiment needs it (§30):
 
     modules/
-      foundry/         # Experiment 001 - model deployment + agent
+      models/          # Experiment 001 - model deployment + agent
       storage/         # Blob/Data Lake, containers, lifecycle rules
       keyvault/        # secrets + managed identity access policies
       container-apps/  # environment, API, collector, jobs

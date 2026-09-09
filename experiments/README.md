@@ -11,7 +11,7 @@ before committing to architecture:
 
 | # | Experiment | Exit gate | Target |
 |---|---|---|---|
-| 001 | `001-foundry-call/` | Reliable authentication, logging and cost visibility. | Weeks 1-2 |
+| 001 | `001-model-call/` | Reliable authentication, logging and cost visibility. | Weeks 1-2 |
 | 002 | `002-strategy-compiler/` | 10-20 test prompts produce no silent invented parameters. | Weeks 1-2 |
 | 003 | `003-local-backtest/` | Known strategy results are reproducible. | Weeks 3-4 |
 | 004 | `004-critic-loop/` | Critic catches intentionally planted weak strategies. | Weeks 9-10 |

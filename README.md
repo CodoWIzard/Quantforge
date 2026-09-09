@@ -18,7 +18,7 @@ Five-month software development internship, two developers.
 - BTC and ETH perpetual futures, Kraken demo environment
 - Intraday, roughly 1m to 15m. No HFT.
 - Paper/demo execution only
-- Azure + Microsoft Foundry
+- Cloud-hosted, provider-neutral model access
 
 ## Start here
 | File | Purpose |
@@ -54,6 +54,6 @@ controlled paper execution → polished SaaS
 The Azure/AI architecture serves that loop. It is not the project.
 
 ## Immediate next action
-Experiment 001 (one Foundry structured-output call) and Experiment 002 (StrategySpec
+Experiment 001 (one structured-output model call) and Experiment 002 (StrategySpec
 compiler), in `experiments/`. Do not provision Managed Redis, do not build billing,
 do not start the web interface until that loop is convincing.

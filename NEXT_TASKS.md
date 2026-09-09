@@ -6,10 +6,10 @@ An experiment is finished when its **exit gate** is demonstrated and recorded in
 
 ## Now — the two the blueprint names as immediate
 
-### Experiment 001 — Foundry call
-Small local Python script calls one Foundry model and returns structured output.
+### Experiment 001 — Model call
+Small local Python script calls one hosted LLM and returns structured output.
 **Gate:** reliable authentication, logging and cost visibility.
-Blocked on: Azure subscription + Foundry deployment + Key Vault for the key.
+Blocked on: a provisioned model endpoint + Key Vault for the key.
 
 ### Experiment 002 — Strategy compiler
 Messy hypothesis → schema-valid StrategySpec; the agent asks for what is missing.
@@ -34,11 +34,11 @@ Work: add pydantic, implement `packages/strategy_schema/compiler.py`, un-xfail
 
 | Weeks | Focus | Exit gate |
 |---|---|---|
-| 1–2 | Scope + experiments | Architecture baseline, eval fixtures, Foundry/compiler spike, approved data contracts |
+| 1–2 | Scope + experiments | Architecture baseline, eval fixtures, model/compiler spike, approved data contracts |
 | 3–4 | Data foundation | Kraken import + live collection, Blob/Parquet layout, quality checks, replay fixture |
 | 5–6 | Strategy representation | Guided clarification, StrategySpec versions, deterministic compiler, schema tests |
 | 7–8 | Backtest engine | Fees/funding/slippage, reproducible trades/metrics, containerised job |
-| 9–10 | Foundry research loop | Director + specialist + critic, traces, first evaluation suite |
+| 9–10 | Agent research loop | Director + specialist + critic, traces, first evaluation suite |
 | 11–12 | Validation | Out-of-sample, sensitivity, regime, delay, cost stress; verdict framework |
 | 13–14 | Risk + persistence | PostgreSQL, risk engine, approvals, audit schema, cost ledger |
 | 15–16 | Paper execution | Kraken demo orders, reconciliation, pause/kill switch, monitoring |
@@ -50,12 +50,12 @@ Work: add pydantic, implement `packages/strategy_schema/compiler.py`, un-xfail
 - [x] Create GitHub repo + context files
 - [x] Create StrategySpec schema
 - [ ] Create Azure budget + lab resource group
-- [ ] Prove one Foundry structured-output call
+- [ ] Prove one structured-output model call
 - [ ] Download/collect initial Kraken data
 - [ ] Write first 20 evaluation fixtures (5 done)
 
 ## Ownership (§41, suggested)
-- **Developer A — Azure/Foundry lead:** Azure resources, Terraform, Foundry agents/evals,
+- **Developer A — infrastructure lead:** cloud resources, Terraform, agent configs/evals,
   secrets, monitoring, deployments, cost telemetry
 - **Developer B — trading/product lead:** market ingestion, StrategySpec/compiler,
   backtesting/validation, paper execution, web product

@@ -15,7 +15,7 @@ something; keep everything else local until it earns its bill.**
 
 | Service | When to introduce |
 |---|---|
-| Microsoft Foundry | Experiment 001 |
+| Hosted model endpoint | Experiment 001 |
 | Blob / Data Lake | as soon as collection starts |
 | Key Vault | before real secrets enter the cloud |
 | Container Apps + Jobs | after local containerised backtest works |
@@ -33,7 +33,7 @@ telemetry a product feature, not an afterthought.
 
 | Category | Range |
 |---|---|
-| Foundry models / agents / evals | €100–€500 |
+| Model inference / agents / evals | €100–€500 |
 | Container Apps + Jobs | €75–€150 |
 | PostgreSQL | €0–€80 |
 | Blob / Data Lake | €10–€50 |

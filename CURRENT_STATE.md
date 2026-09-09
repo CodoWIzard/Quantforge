@@ -58,9 +58,26 @@ Contracts are frozen; implementation has not started.
 - ADR-001..010, `.github/` templates, CI, cron/systemd for the Discord bots
 - infra/ READMEs: Azure service introduction order, budget table, Terraform module plan
 
+### Discord agent service — **running**
+`services/discord-bots/` runs six personas in one process, each with its own
+gateway identity: Research_Director, Strategy-Analyst, Risk-Reviewer, QA-bot,
+Builder_1, Admin-bot. These are NOT the `agents/` directory — that holds
+instruction drafts for a future hosted-model pipeline which has never been run.
+- Chat (@mention / `/ask`) is read-only: real file reads in a scratch worktree,
+  every write discarded.
+- `/build <task>` is the only write path: own branch, scope check against the real
+  diff, pytest, push, PR. Nothing self-merges.
+- `/research <idea>` (Director only) runs the full chain automatically:
+  Director frames -> Strategy-Analyst writes the StrategySpec -> Risk-Reviewer
+  falsifies it -> Director gives the verdict. Each stage posts under its own name.
+  Fixed four-stage sequence, one run at a time, aborts on a failed stage.
+- Every prompt carries three fact blocks read at request time: the local tree
+  (`repo_facts`), the live persona roster (`roster_facts`) and GitHub state
+  (`git_facts` — commits, open PRs/issues, pushed bot branches).
+
 ## What does NOT exist yet
 - No Azure resources provisioned. No Terraform applied. No resource group.
-- No Foundry deployment, model or agent — instructions are drafts never run against a model
+- No model endpoint or hosted agent — instructions are drafts never run against a model
 - No Kraken data downloaded. No collector running. No Parquet lake.
 - No PostgreSQL instance, no schema, no migrations
 - **No executable logic in `risk_engine`, `exchange_contracts`, `backtester` or
@@ -77,7 +94,7 @@ Contracts are frozen; implementation has not started.
   must be populated from the live Kraken instruments endpoint, not guessed
 
 ## Immediate next action
-Experiment 001 — one Foundry model call returning structured output.
+Experiment 001 — one model call returning structured output.
 Experiment 002 — strict StrategySpec compiler against the frozen schema.
 
 Do NOT provision Managed Redis (ADR-006). Do NOT build billing.

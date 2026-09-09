@@ -103,7 +103,7 @@ it teaches people to skim past the questions, which is precisely what B4 exists 
 
 **No natural language was parsed.** `compile_candidate()` takes a structured dict; turning
 a sentence into that dict is the Strategy Specialist agent's job and is blocked on
-Experiment 001 (Foundry, no Azure subscription yet). What is proven: the schema, the
+Experiment 001 (no model endpoint yet). What is proven: the schema, the
 clarification rules, the refusal behaviour and the hashing all work deterministically.
 
 ## Gate met?
@@ -111,7 +111,7 @@ clarification rules, the refusal behaviour and the hashing all work deterministi
 - [x] 10–20 test prompts drafted (20)
 - [x] Clarification rules covering the five named gap types (8 rules)
 - [x] Impossible/unsafe behaviour recorded with expected responses (18)
-- [ ] **Prompts actually run against a model** — blocked on Experiment 001 (Foundry)
+- [ ] **Prompts actually run against a model** — blocked on Experiment 001
 - [ ] Compiler implemented (`packages/strategy_schema/compiler.py` still raises)
 
 The gate is *"prompts produce no silent invented parameters"*. The corpus and the expected
