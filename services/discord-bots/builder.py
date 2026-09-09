@@ -63,6 +63,11 @@ BUILDER_SCOPE = (
 # the schema or experiments it reviews - same self-marking fence as the Builder,
 # pointed the other way.
 QA_SCOPE = ("tests/", "data-contracts/")
+# The Risk Reviewer writes the review criteria and the tests that make them
+# executable - never the spec, the experiments or the backtester it critiques.
+# A critic that can edit what it judges is marking its own homework from the
+# other direction.
+RISK_SCOPE = ("docs/", "tests/")
 
 # Never, for any bot, on any branch. A build that touches one of these is
 # aborted and discarded rather than pushed for review: the point of review is
@@ -169,6 +174,7 @@ SCOPES: dict[str, tuple[str, ...]] = {
     "admin": ADMIN_SCOPE,
     "builder": BUILDER_SCOPE,
     "qa": QA_SCOPE,
+    "risk": RISK_SCOPE,
 }
 
 
