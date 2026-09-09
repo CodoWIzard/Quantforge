@@ -852,8 +852,9 @@ def roster_facts() -> str:
         "\n"
         "HOW WORK MOVES BETWEEN US:\n"
         "  /research <idea> runs the full chain automatically: Director frames it ->\n"
-        "  Analyst writes the StrategySpec -> Risk Reviewer falsifies it -> Director\n"
-        "  gives the verdict. Each stage posts publicly under its own name.\n"
+        "  Analyst writes the StrategySpec -> Risk Reviewer falsifies it -> QA-bot\n"
+        "  gates the contract -> Director gives the plain-English verdict. Each stage\n"
+        "  posts publicly under its own name.\n"
         "  Outside a /research run there is NO automatic handoff: a bot only wakes on\n"
         "  an @mention or a reply, cannot message another bot, and nothing continues\n"
         "  after its reply ends. If work needs another persona and no run is active,\n"
@@ -1026,7 +1027,7 @@ class QFBot(discord.Client):
         if self.name == "director":
             @self.tree.command(
                 name="research",
-                description="Run the full chain: Director -> Analyst -> Risk -> verdict",
+                description="Director -> Analyst -> Risk -> QA -> verdict (5 stages)",
                 guild=guild)
             @app_commands.describe(idea="The trading idea to research, in plain English.")
             async def _research(interaction: discord.Interaction, idea: str):

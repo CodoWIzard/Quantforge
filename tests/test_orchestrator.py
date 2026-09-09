@@ -22,7 +22,8 @@ sys.path.insert(0, str(BOTS_DIR))
 
 import orchestrator as orch  # noqa: E402
 
-PERSONAS = {"director": "D-PERSONA", "analyst": "A-PERSONA", "risk": "R-PERSONA"}
+PERSONAS = {"director": "D-PERSONA", "analyst": "A-PERSONA",
+            "risk": "R-PERSONA", "qa": "QA-PERSONA"}
 
 
 def run(coro):
@@ -59,14 +60,35 @@ def test_pipeline_is_a_fixed_sequence_not_agent_chosen() -> None:
     """No stage names its own successor. A fixed tuple cannot cycle; agents that
     pick the next agent can hand work back and forth indefinitely."""
     assert isinstance(orch.PIPELINE, tuple)
-    assert [s.bot for s in orch.PIPELINE] == ["director", "analyst", "risk", "director"]
+    assert [s.bot for s in orch.PIPELINE] == ["director", "analyst", "risk", "qa",
+                                              "director"]
 
 
 def test_director_opens_and_closes_the_run() -> None:
-    """The Director frames the work and delivers the verdict; the specialists
-    never address the user directly."""
+    """The Director frames the work and speaks the verdict. QA gates the contract
+    in between but must not be the last word: its output is a fenced JSON object
+    of schema_errors and required_fixes, written for a machine. Ending on it hands
+    the user a JSON blob as the answer to their trading idea."""
     assert orch.PIPELINE[0].bot == "director"
     assert orch.PIPELINE[-1].bot == "director"
+
+
+def test_qa_gates_before_the_verdict_not_instead_of_it() -> None:
+    """QA checks whether the spec is STRUCTURALLY valid; the Risk Reviewer checks
+    whether the IDEA holds. A clean contract check is not an endorsement, so a
+    human-readable stage has to translate the two."""
+    bots_in_order = [s.bot for s in orch.PIPELINE]
+    assert "qa" in bots_in_order
+    assert bots_in_order.index("qa") < len(bots_in_order) - 1
+    assert "GATE, not the closing word" in orch.PIPELINE[3].brief
+    assert "PLAIN ENGLISH" in orch.PIPELINE[-1].brief
+
+
+def test_verdict_separates_structural_validity_from_idea_quality() -> None:
+    """The failure this guards: QA passing the schema reads as approval of the
+    strategy."""
+    final = orch.PIPELINE[-1].brief
+    assert "can pass QA and still be a bad strategy" in final
 
 
 def test_stage_count_is_capped_independently_of_pipeline() -> None:
@@ -108,7 +130,7 @@ def test_every_stage_receives_the_original_user_idea() -> None:
     rec = Recorder()
     idea = "buy BTC when the 50 crosses the 200 on 5m"
     run(orch.run_pipeline(idea, "jayden", "research", rec.ask, PERSONAS, rec.post))
-    assert len(rec.asks) == 4
+    assert len(rec.asks) == len(orch.PIPELINE)
     for _bot, _persona, question in rec.asks:
         assert idea in question
 
@@ -135,7 +157,8 @@ def test_each_stage_runs_under_its_own_persona() -> None:
     run(orch.run_pipeline("idea", "u", "c", rec.ask, PERSONAS, rec.post))
     got = [(bot, persona) for bot, persona, _ in rec.asks]
     assert got == [("director", "D-PERSONA"), ("analyst", "A-PERSONA"),
-                   ("risk", "R-PERSONA"), ("director", "D-PERSONA")]
+                   ("risk", "R-PERSONA"), ("qa", "QA-PERSONA"),
+                   ("director", "D-PERSONA")]
 
 
 def test_context_labels_the_idea_as_unreplaceable() -> None:
@@ -181,7 +204,7 @@ def test_a_post_failure_does_not_void_completed_work() -> None:
 
     res = run(orch.run_pipeline("idea", "u", "c", rec.ask, PERSONAS, broken_post))
     assert res.ok
-    assert len(res.stages) == 4
+    assert len(res.stages) == len(orch.PIPELINE)
 
 
 # --- publication ----------------------------------------------------------
@@ -191,12 +214,14 @@ def test_every_stage_is_posted_under_the_bot_that_produced_it() -> None:
     the others said; the visible trail is the point."""
     rec = Recorder()
     run(orch.run_pipeline("idea", "u", "c", rec.ask, PERSONAS, rec.post))
-    assert [b for b, _, _ in rec.posts] == ["director", "analyst", "risk", "director"]
+    assert [b for b, _, _ in rec.posts] == ["director", "analyst", "risk", "qa",
+                                            "director"]
 
 
 def test_stage_labels_are_ordered_and_visible() -> None:
     labels = [s.label for s in orch.PIPELINE]
-    assert labels[0].startswith("1/4") and labels[-1].startswith("4/4")
+    assert labels[0].startswith("1/5") and labels[-1].startswith("5/5")
+    assert all(lbl.startswith(f"{i}/5") for i, lbl in enumerate(labels, start=1))
 
 
 # --- concurrency ----------------------------------------------------------
@@ -291,7 +316,8 @@ def test_stage_briefs_restate_the_critical_guardrail_placeholder() -> None:
 @pytest.mark.parametrize("stage,phrase", [
     (1, "do not fill in a value nobody stated"),
     (2, "falsification, not improvement"),
-    (3, "No performance numbers exist"),
+    (3, "NEVER DO IS FIX ANYTHING"),
+    (4, "no backtest has run"),
 ])
 def test_stage_briefs_restate_the_critical_guardrail(stage: int, phrase: str) -> None:
     """The brief cannot relax a persona rule, but it must not undercut one

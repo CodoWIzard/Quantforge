@@ -215,3 +215,30 @@ def test_read_tree_is_reset_before_reuse(src: str) -> None:
     """A chat session's stray writes must not persist into the next question."""
     assert '"git", "reset", "--hard", "origin/main"' in src
     assert '"git", "clean", "-fdx"' in src
+
+
+# --- worktree containment: the /build leak ------------------------------
+
+def test_build_prompt_states_the_worktree_path() -> None:
+    """THE BUG: BUILD_RULES said "stay inside this worktree" but the prompt never
+    said WHERE it was, while the persona above names the shared checkout as "the
+    repo at /root/projects/quantforge". The agent resolved the repo by that
+    documented absolute path and edited the shared checkout on main. Telling it
+    the destination is what makes the instruction followable."""
+    src = (SVC / "builder.py").read_text()
+    assert 'f"Worktree (your build directory, work ONLY here): {wt}' in src
+
+
+def test_build_rules_name_the_shared_checkout_as_off_limits() -> None:
+    """Naming only the allowed path is not enough - the model has the shared path
+    from its persona and needs to know that specific directory is not it."""
+    assert "/root/projects/quantforge" in builder.BUILD_RULES
+    assert "NOT your build directory" in builder.BUILD_RULES
+    assert "do not `cd` out of it" in builder.BUILD_RULES
+
+
+def test_build_rules_explain_why_writing_outside_is_unrecoverable() -> None:
+    """A rule with a stated consequence survives an agent's improvisation better
+    than a bare prohibition."""
+    assert "cannot review or undo" in builder.BUILD_RULES
+    assert "outside any" in builder.BUILD_RULES

@@ -101,8 +101,19 @@ Rules that still hold, without exception:
   THIS build and you can point at the command that did.
 - No secrets in code, tests, fixtures, comments or commit messages. Never read
   or copy anything from /root/.config.
-- Stay inside this worktree. Do not touch /root/apps, other projects, the
-  Hermes profile directories, or any path outside the repository root.
+- WORK ONLY IN YOUR WORKTREE, WHOSE ABSOLUTE PATH IS GIVEN BELOW AS "Worktree".
+  That directory is your checkout of this repo for this build. Every path you
+  read or write must be inside it - use relative paths, or absolute paths that
+  start with the Worktree path.
+  The shared checkout at the repository path named in your role briefing above
+  (/root/projects/quantforge) is a DIFFERENT directory belonging to the humans
+  and the running bot service. It is NOT your build directory. Writing there is
+  the one failure this mode cannot review or undo: your changes land outside any
+  branch, mix with whatever a human was doing, and the build is aborted with the
+  work stranded. Starting cwd is already the worktree - do not `cd` out of it,
+  and do not "helpfully" locate the repo by its documented absolute path.
+- Do not touch /root/apps, other projects, the Hermes profile directories, or
+  any path outside your worktree.
 - Do not `git push`, do not open a pull request, do not merge, do not switch or
   delete branches. The service does that for you after it has checked your
   diff. A push from inside the agent bypasses that check.
@@ -268,6 +279,12 @@ async def build(
                 f"{persona}\n\n{BUILD_RULES}\n"
                 f"{history}\n"
                 f"Requested by {who} via Discord.\n"
+                # The worktree path is stated explicitly because the persona
+                # above names the SHARED checkout as "the repo". Told to "stay in
+                # this worktree" without being told where it is, the agent
+                # resolved the repo by its documented absolute path and edited
+                # the shared checkout instead - observed, not theoretical.
+                f"Worktree (your build directory, work ONLY here): {wt}\n"
                 f"Branch: {branch}\n"
                 f"TASK:\n{task}\n"
             )

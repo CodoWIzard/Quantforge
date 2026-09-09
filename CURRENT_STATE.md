@@ -69,8 +69,9 @@ instruction drafts for a future hosted-model pipeline which has never been run.
   diff, pytest, push, PR. Nothing self-merges.
 - `/research <idea>` (Director only) runs the full chain automatically:
   Director frames -> Strategy-Analyst writes the StrategySpec -> Risk-Reviewer
-  falsifies it -> Director gives the verdict. Each stage posts under its own name.
-  Fixed four-stage sequence, one run at a time, aborts on a failed stage.
+  falsifies it -> QA-bot gates the contract -> Director gives the plain-English
+  verdict. Each stage posts under its own name. Fixed five-stage sequence, one run
+  at a time, aborts on a failed stage.
 - Every prompt carries three fact blocks read at request time: the local tree
   (`repo_facts`), the live persona roster (`roster_facts`) and GitHub state
   (`git_facts` — commits, open PRs/issues, pushed bot branches).

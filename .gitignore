@@ -42,6 +42,13 @@ data/
 # Bot build worktrees (services/discord-bots/builder.py)
 .worktrees/
 
+# Stray XDG dirs created when a tool runs without HOME set (gh writes
+# .local/state/gh/device-id). Never project state, and one of them holds an
+# identifier - keep both out of git rather than committing them by accident.
+.local/
+.config/
+.cache/
+
 # Artifacts
 artifacts/
 runs/

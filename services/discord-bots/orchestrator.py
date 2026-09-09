@@ -52,7 +52,7 @@ RUN_TIMEOUT = 1800
 # Hard ceiling on stages, independent of PIPELINE's length. PIPELINE is a
 # constant today, but this is the guard that survives someone later making the
 # sequence dynamic: a run can never cost more than this many model calls.
-MAX_STAGES = 6
+MAX_STAGES = 8
 
 # Chat replies are capped at Discord's message length, but a pipeline stage's
 # output is INPUT to the next stage. Truncating a StrategySpec at 1900 characters
@@ -79,7 +79,7 @@ class Stage:
 PIPELINE: tuple[Stage, ...] = (
     Stage(
         bot="director",
-        label="1/4 Research Director — framing",
+        label="1/5 Research Director — framing",
         brief=(
             "A user has submitted the trading idea below. You are opening a research\n"
             "run. Do NOT write the StrategySpec yourself - the Strategy Analyst does\n"
@@ -93,7 +93,7 @@ PIPELINE: tuple[Stage, ...] = (
     ),
     Stage(
         bot="analyst",
-        label="2/4 Strategy Analyst — StrategySpec",
+        label="2/5 Strategy Analyst — StrategySpec",
         brief=(
             "The Research Director has framed this idea for you above. Produce ONE\n"
             "StrategySpec in your required format, following the Director's direction.\n"
@@ -104,7 +104,7 @@ PIPELINE: tuple[Stage, ...] = (
     ),
     Stage(
         bot="risk",
-        label="3/4 Risk Reviewer — falsification",
+        label="3/5 Risk Reviewer — falsification",
         brief=(
             "Review the StrategySpec above in your required format. It was produced by\n"
             "the Strategy Analyst from the user's idea, both of which are shown. Your\n"
@@ -114,16 +114,41 @@ PIPELINE: tuple[Stage, ...] = (
         ),
     ),
     Stage(
-        bot="director",
-        label="4/4 Research Director — verdict",
+        bot="qa",
+        label="4/5 QA-bot — contract gate",
         brief=(
-            "You now have the full chain: the user's idea, your framing, the Analyst's\n"
-            "StrategySpec and the Risk Reviewer's critique. Close the run for the user.\n\n"
-            "Give a verdict and say plainly what it rests on. State what must be tested\n"
-            "before anyone trusts this, and what specific question the user has to\n"
-            "answer for the spec to be complete. No performance numbers exist - no\n"
-            "backtest has run - so do not imply any. If the Reviewer raised something\n"
-            "you are overriding, say why. Address the user directly."
+            "You now have the full chain: the user's idea, the Director's framing, the\n"
+            "Analyst's StrategySpec and the Risk Reviewer's critique. Run your six\n"
+            "checks (JSON/schema validity, required fields, scope, invented rules,\n"
+            "clarification behaviour, demonstrability) against the StrategySpec the\n"
+            "Analyst produced.\n\n"
+            "You are a GATE, not the closing word: the Director speaks to the user after\n"
+            "you, so write for the Director, not for the user. Output your review in the\n"
+            "required JSON format. required_fixes names exactly what must be corrected;\n"
+            "approval_summary is the one sentence the Director will act on.\n"
+            "No performance numbers exist - no backtest has run - do not imply any.\n"
+            "THE ONE THING YOU MUST NEVER DO IS FIX ANYTHING. Report defects; do not\n"
+            "supply missing values or rewrite the strategy."
+        ),
+    ),
+    Stage(
+        bot="director",
+        label="5/5 Research Director — verdict",
+        brief=(
+            "You now have the whole chain: the user's idea, your framing, the Analyst's\n"
+            "StrategySpec, the Risk Reviewer's critique and QA's contract gate. Close\n"
+            "the run for the user in PLAIN ENGLISH - they should never have to read\n"
+            "QA's JSON to understand the answer.\n\n"
+            "Give a verdict and say plainly what it rests on. Separate the two kinds of\n"
+            "finding you were given: QA reports whether the spec is STRUCTURALLY valid\n"
+            "(fields, schema, invented rules); the Risk Reviewer reports whether the\n"
+            "IDEA survives scrutiny. A spec can pass QA and still be a bad strategy -\n"
+            "do not let a clean contract check read as an endorsement.\n\n"
+            "State what must be tested before anyone trusts this, and what specific\n"
+            "question the user has to answer for the spec to be complete. No performance\n"
+            "numbers exist - no backtest has run - so do not imply any. If you are\n"
+            "overriding something QA or the Reviewer raised, say why. Address the user\n"
+            "directly."
         ),
     ),
 )
