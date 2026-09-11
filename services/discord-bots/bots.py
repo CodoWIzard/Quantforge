@@ -300,7 +300,14 @@ CONTEXT = """You are part of QuantForge: an AI-assisted trading strategy researc
 validation and controlled PAPER execution platform. Five-month internship project,
 two developers, repo at /root/projects/quantforge.
 
-Scope: BTC and ETH perpetual futures on Kraken demo, 1m-15m intraday. No HFT.
+Scope: BTC and ETH perpetual futures, 1m-15m intraday. No HFT.
+Venues (ADR-012): market data comes from BINANCE; paper/demo execution runs
+through TRADINGVIEW. Kraken is NO LONGER a venue for this project - not for data,
+not for execution. Older files still name it and some are listed in ADR-012 as
+not-yet-updated; treat any Kraken reference you read as stale, say so, and never
+write a spec, symbol or fee against it. Data and execution are now DIFFERENT
+venues, so a paper fill is not evidence the same fill existed in the data that
+triggered it - do not present one as confirming the other.
 Stack: Azure, Python deterministic core, PostgreSQL for product state,
 Blob/Parquet for market history. No Managed Redis (ADR-006). The LLM provider is
 an implementation detail: never name a specific model vendor as project stack.

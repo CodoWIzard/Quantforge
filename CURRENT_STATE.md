@@ -79,7 +79,7 @@ instruction drafts for a future hosted-model pipeline which has never been run.
 ## What does NOT exist yet
 - No Azure resources provisioned. No Terraform applied. No resource group.
 - No model endpoint or hosted agent — instructions are drafts never run against a model
-- No Kraken data downloaded. No collector running. No Parquet lake.
+- No Binance data downloaded. No collector running. No Parquet lake.
 - No PostgreSQL instance, no schema, no migrations
 - **No executable logic in `risk_engine`, `exchange_contracts`, `backtester` or
   `validation`** — every body still raises NotImplementedError. (`strategy_schema` is
@@ -91,8 +91,13 @@ instruction drafts for a future hosted-model pipeline which has never been run.
 - Experiment 002's fixtures exist but have never been run against a model (needs 001).
 - No Dockerfiles written
 - pydantic is not yet a dependency (add it with Experiment 002)
-- `packages/exchange_contracts/symbols.py` tick sizes and min order sizes are empty —
-  must be populated from the live Kraken instruments endpoint, not guessed
+- `packages/exchange_contracts/` holds KRAKEN symbols, ticks and size precision,
+  fetched 2026-09-07 from the Kraken Futures instruments endpoint. ADR-012 moved
+  data to Binance and execution to TradingView, so every number in that package
+  now describes a venue this project does not use. It is stale, not wrong-for-
+  Kraken: do not hand-translate `PF_XBTUSD` to a Binance ticker or reuse the tick
+  sizes. A Binance vocabulary must be fetched from Binance's own instrument list.
+  A wrong tick size silently corrupts every simulated fill.
 
 ## Immediate next action
 Experiment 001 — one model call returning structured output.

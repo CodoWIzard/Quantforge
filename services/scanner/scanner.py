@@ -43,7 +43,8 @@ from .types import Candle
 #:   1. At least one model registered with a QuantForge RunManifest behind it.
 #:   2. get_market_data() implemented and pinning its source in the manifest.
 #:   3. paper_deploy() implemented, or the scanner declared publish-only.
-#:   4. Data source decided (Binance vs Kraken) and fees/ticks re-fetched.
+#:   4. Binance fees/ticks fetched from Binance (ADR-012 settled the venue;
+#:      exchange_contracts still holds Kraken numbers and must not be reused).
 ENABLED = False
 
 

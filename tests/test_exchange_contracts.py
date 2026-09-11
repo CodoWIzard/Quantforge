@@ -1,7 +1,14 @@
 """Venue constants are load-bearing - a wrong tick silently fabricates fills.
 
+STALE VENUE (ADR-012): this file tests the Kraken package, and Kraken is no longer
+a venue for this project - data is Binance, paper execution is TradingView. The
+tests are kept because they still guard the shape of a venue package (canonical
+scope, tick rounding, provenance) and because that shape is what a Binance module
+must copy. What must NOT be copied is the numbers.
+
 Offline assertions only. The live-API check is marked so CI never depends on the
-network, but a human can run it to confirm the committed numbers still match Kraken.
+network; running it now confirms the committed numbers still match a venue this
+project does not use.
 """
 
 from __future__ import annotations
@@ -17,7 +24,9 @@ CANONICAL = {"BTC-PERP", "ETH-PERP"}
 
 
 def test_scope_is_btc_and_eth_only():
-    """ADR-001 - one exchange, two markets."""
+    """ADR-001 - two markets. (The "one exchange" half was split by ADR-012:
+    data from Binance, paper execution through TradingView. BTC/ETH only stands.)
+    """
     assert set(S.SYMBOLS) == CANONICAL
 
 
@@ -55,7 +64,13 @@ def test_round_to_tick_is_idempotent():
 
 @pytest.mark.live
 def test_committed_ticks_still_match_kraken():
-    """Run manually: pytest -m live. Never in CI - no test may need the network."""
+    """Run manually: pytest -m live. Never in CI - no test may need the network.
+
+    Kraken is no longer the project's venue (ADR-012); this now only verifies that
+    the committed Kraken numbers are still a faithful copy of Kraken. It is NOT
+    evidence about Binance, and a Binance module needs its own equivalent check
+    against Binance's own instrument list.
+    """
     assert S.INSTRUMENTS_URL.startswith("https://"), "refuse non-https fetch"
     with urllib.request.urlopen(S.INSTRUMENTS_URL, timeout=20) as r:  # noqa: S310
         data = json.load(r)

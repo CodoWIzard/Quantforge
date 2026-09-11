@@ -10,7 +10,11 @@ Paper execution is the final internship boundary.
 Real-money execution introduces regulatory, custody and liability exposure that a 5-month internship cannot responsibly absorb.
 
 ## Consequences
-Final demo ends at Kraken demo orders. Live trading requires specialist legal review first.
+Final demo ends at paper orders. Live trading requires specialist legal review first.
+
+(Amended by ADR-012: the venue named here was Kraken demo; it is now TradingView
+paper execution. The boundary this ADR sets — paper is the end of the internship —
+is unchanged.)
 
 ## Source
 Master Blueprint v2.0, Appendix D. See docs/source/QuantForge_Master_Blueprint_v2.0.docx

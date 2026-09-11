@@ -15,7 +15,9 @@ Pre-build. Repository scaffolded from Master Blueprint v2.0 (8 August 2026).
 Five-month software development internship, two developers.
 
 ## Scope
-- BTC and ETH perpetual futures, Kraken demo environment
+- BTC and ETH perpetual futures, intraday
+- Market data from Binance; paper/demo execution through TradingView (ADR-012).
+  Kraken is not a venue for this project.
 - Intraday, roughly 1m to 15m. No HFT.
 - Paper/demo execution only
 - Cloud-hosted, provider-neutral model access

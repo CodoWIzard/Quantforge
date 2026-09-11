@@ -10,7 +10,13 @@ Not a prediction engine. The product value is rigorous, auditable, reproducible 
 including the ability to REJECT a bad strategy.
 
 ## Current scope (internship baseline)
-- BTC and ETH perpetual futures, ONE exchange (Kraken / Kraken derivatives demo)
+- BTC and ETH perpetual futures, intraday
+- Venues (ADR-012): market data from **Binance**; paper/demo execution through
+  **TradingView**. Kraken is no longer a venue for this project, for data or for
+  execution. ADR-001's "one exchange" no longer holds as written — data and
+  execution are separate venues, and the cost of that is real: a paper fill is
+  not evidence the same fill was available in the data that triggered it. Pin
+  every fee, funding and tick number to the venue it came from.
 - Intraday timeframes, roughly 1m to 15m. No HFT.
 - Paper/demo execution only. No public real-money execution.
 - Cloud direction: Microsoft Azure. Model provider deliberately unpinned.

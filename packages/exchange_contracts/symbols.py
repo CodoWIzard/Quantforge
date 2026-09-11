@@ -1,4 +1,9 @@
-"""Symbol mapping between QuantForge canonical names and Kraken venue names.
+"""Symbol mapping between QuantForge canonical names and KRAKEN venue names.
+
+STALE (ADR-012): Kraken is no longer a venue for this project — data is Binance,
+paper execution is TradingView. Every number below is a correct reading of a
+market QuantForge does not use. Do not rename the tickers to Binance ones and
+keep the ticks; build a separate Binance module from Binance's instrument list.
 
 Canonical names appear in StrategySpec and MarketEvent. Venue names appear only at the
 adapter boundary, so a strategy is never written against an exchange-specific ticker.

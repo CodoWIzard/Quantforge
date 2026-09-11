@@ -6,7 +6,7 @@ Shared libraries imported by services, research and apps.
 |---|---|
 | `strategy_schema/` | StrategySpec models, the compiler, typed compile errors (ADR-003) |
 | `risk_engine/` | Hard limits, pre-trade checks, kill switch. No AI in this package, ever |
-| `exchange_contracts/` | Kraken vocabulary: symbols, fees, order intent |
+| `exchange_contracts/` | Kraken vocabulary: symbols, fees, order intent — **stale**, ADR-012 dropped Kraken; a Binance package goes beside it |
 
 ## Naming deviation from blueprint §38 — deliberate
 

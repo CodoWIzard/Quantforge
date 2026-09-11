@@ -140,7 +140,7 @@
         "source": {
           "type": "string",
           "examples": [
-            "kraken-futures-ws"
+            "binance-futures-ws"
           ]
         },
         "raw_partition": {

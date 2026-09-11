@@ -5,7 +5,7 @@
 
 ## Build
 
-Kraken WebSocket collector writes clean live data.
+Binance WebSocket collector writes clean live data (ADR-012; was Kraken).
 
 ## Exit gate
 

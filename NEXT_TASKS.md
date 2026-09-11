@@ -35,13 +35,13 @@ Work: add pydantic, implement `packages/strategy_schema/compiler.py`, un-xfail
 | Weeks | Focus | Exit gate |
 |---|---|---|
 | 1–2 | Scope + experiments | Architecture baseline, eval fixtures, model/compiler spike, approved data contracts |
-| 3–4 | Data foundation | Kraken import + live collection, Blob/Parquet layout, quality checks, replay fixture |
+| 3–4 | Data foundation | Binance import + live collection, Blob/Parquet layout, quality checks, replay fixture |
 | 5–6 | Strategy representation | Guided clarification, StrategySpec versions, deterministic compiler, schema tests |
 | 7–8 | Backtest engine | Fees/funding/slippage, reproducible trades/metrics, containerised job |
 | 9–10 | Agent research loop | Director + specialist + critic, traces, first evaluation suite |
 | 11–12 | Validation | Out-of-sample, sensitivity, regime, delay, cost stress; verdict framework |
 | 13–14 | Risk + persistence | PostgreSQL, risk engine, approvals, audit schema, cost ledger |
-| 15–16 | Paper execution | Kraken demo orders, reconciliation, pause/kill switch, monitoring |
+| 15–16 | Paper execution | TradingView paper orders, reconciliation, pause/kill switch, monitoring |
 | 17–18 | SaaS + security | Web flows, auth, tenant controls, Key Vault, CI/CD/staging |
 | 19 | User testing | Beginner and technical users complete the workflow; top issues fixed |
 | 20 | Finalisation | Replayable demo, docs, measured cost/evals, deployment scripts, presentation |
@@ -51,7 +51,7 @@ Work: add pydantic, implement `packages/strategy_schema/compiler.py`, un-xfail
 - [x] Create StrategySpec schema
 - [ ] Create Azure budget + lab resource group
 - [ ] Prove one structured-output model call
-- [ ] Download/collect initial Kraken data
+- [ ] Download/collect initial Binance data
 - [ ] Write first 20 evaluation fixtures (5 done)
 
 ## Ownership (§41, suggested)

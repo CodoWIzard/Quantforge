@@ -1,9 +1,17 @@
 # QuantForge — known issues and open questions
 
 ## Open questions (need a decision before the relevant phase)
-- Kraken demo/derivatives environment: confirm the exact demo account type available from
-  the Netherlands and whether it exposes the same order API surface as live.
-  (Note: Kraken EU derivatives is a separate account + separate API key from Kraken spot.)
+- TradingView paper execution (ADR-012): does TradingView SIMULATE the fills, or does it
+  only SIGNAL a QuantForge paper executor that simulates them? TradingView is a charting
+  and alerting surface, not a matching engine. These are different systems with different
+  failure modes and Experiment 009 cannot start until it is settled.
+- Binance access from the Netherlands: confirm which Binance entity and API surface are
+  usable, and whether historical klines and the live WS feed come from the same one.
+- Data venue and execution venue are now different (Binance vs TradingView). Nothing in
+  the codebase currently detects a fill being credited against data that never showed it.
+  Decide whether reconciliation enforces that or merely reports it.
+- (Closed by ADR-012: the Kraken demo/derivatives account question. Kraken is no longer
+  a venue for this project. `packages/exchange_contracts` still holds Kraken numbers.)
 - Azure subscription: student credits vs paid? Determines PostgreSQL and Container Apps cost.
 - Which model deployments and regions are actually available to the subscription.
 - Backtest engine: constrained internal Python engine first, or adopt LEAN early?

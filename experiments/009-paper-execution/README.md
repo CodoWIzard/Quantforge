@@ -5,7 +5,10 @@
 
 ## Build
 
-Approved StrategySpec triggers deterministic Kraken demo orders.
+Approved StrategySpec triggers deterministic TradingView paper orders (ADR-012;
+was Kraken demo). ADR-012 leaves one thing undecided that this experiment must
+settle before it starts: whether TradingView simulates the fill itself or only
+signals a QuantForge executor that does.
 
 ## Exit gate
 

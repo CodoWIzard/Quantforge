@@ -1,6 +1,11 @@
 # paper-executor
 
-Loads an **approved, immutable** StrategySpec and submits demo orders to Kraken.
+Loads an **approved, immutable** StrategySpec and submits paper orders through
+TradingView (ADR-012; was Kraken demo).
+
+Data comes from Binance and fills come from TradingView, so they are DIFFERENT
+venues. Reconciliation must state which venue each number came from: a fill here
+is not evidence the same fill existed in the Binance data that triggered it.
 
 Blueprint §24, Experiment 009. Exit gate: **end-to-end demo trade + reconciliation +
 kill switch.** ADR-002: paper execution is the final internship boundary — no real money.
@@ -32,6 +37,6 @@ now?" — it evaluates rules that a human already approved.
     paper-executor/
       executor.py        # the event loop above
       signal_engine.py   # evaluates the approved spec against MarketEvents
-      adapter_kraken.py  # OrderIntent -> venue request, idempotent
+      adapter_tradingview.py  # OrderIntent -> venue request, idempotent
       reconcile.py       # position/order state vs exchange truth
       Dockerfile

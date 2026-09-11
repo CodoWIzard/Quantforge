@@ -1,6 +1,9 @@
 # market-collector
 
-Maintains Kraken WebSocket feeds and writes normalised `MarketEvent` records to the lake.
+Maintains Binance WebSocket feeds and writes normalised `MarketEvent` records to the lake.
+
+ADR-012: Binance is the market data venue. Kraken was the original plan and is
+no longer used; anything in this repo still naming it is stale.
 
 Blueprint §26, §31, Experiment 008. Exit gate: **reconnect / gap / duplicate tests pass.**
 

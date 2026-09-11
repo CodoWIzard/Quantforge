@@ -122,6 +122,37 @@ def test_context_forbids_credential_disclosure(src: str) -> None:
     assert "Never reveal credentials" in src
 
 
+# --- venue (ADR-012) ----------------------------------------------------
+
+def test_context_names_both_venues_and_retires_kraken(src: str) -> None:
+    """The CONTEXT scope line is what most directly steers a generated
+    StrategySpec. A whole live /research run wrote "Kraken demo" throughout,
+    correctly, because this line said so long after the decision had changed:
+    the agents read the repo, so a venue decided only in chat does not exist.
+    ADR-012 fixed the line; this test stops it drifting back."""
+    ctx = src[src.index("CONTEXT = "):src.index("CONTEXT = ") + 3000]
+    assert "BINANCE" in ctx, "market data venue must be named"
+    assert "TRADINGVIEW" in ctx, "paper execution venue must be named"
+    assert "Kraken is NO LONGER a venue" in ctx
+
+
+def test_context_warns_that_stale_kraken_references_remain(src: str) -> None:
+    """Naming the new venues is not enough on its own. exchange_contracts and its
+    tests still hold real Kraken symbols and tick sizes, deliberately (ADR-012:
+    renaming them into Binance tickers would carry Kraken's ticks across and
+    fabricate fills). A bot that reads those files without being told they are
+    stale will quote them as current."""
+    assert "treat any Kraken reference you read as stale" in src
+
+
+def test_context_states_data_and_execution_are_different_venues(src: str) -> None:
+    """Binance data + TradingView fills is not one venue, and the difference is
+    not cosmetic: a paper fill no longer evidences that the fill was available in
+    the data that triggered it. Nothing in the code detects that, so the bots
+    must not present one as confirming the other."""
+    assert "not evidence the same fill existed in the data" in src
+
+
 def test_both_personas_inherit_shared_context(src: str) -> None:
     assert re.search(r"^DIRECTOR = CONTEXT \+", src, re.M)
     assert re.search(r"^ADMIN = CONTEXT \+", src, re.M)
