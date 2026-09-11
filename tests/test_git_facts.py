@@ -210,9 +210,16 @@ def test_roster_states_that_handoffs_are_not_automatic_outside_a_run() -> None:
 
 
 def test_roster_documents_the_research_chain() -> None:
+    """The chain must be described as it now runs: Director-only stages.
+
+    Updated with ADR-011. The old assertion pinned "Analyst writes the
+    StrategySpec", which is exactly the sentence that became false - and a bot
+    repeating it would promise a handoff that no longer happens.
+    """
     text = bots.roster_facts()
     assert "/research" in text
-    assert "Analyst writes the StrategySpec" in text
+    assert "every\n  stage of it is the DIRECTOR" in text
+    assert "NO LONGER stages in /research" in text
 
 
 def test_both_fact_blocks_reach_the_prompt() -> None:

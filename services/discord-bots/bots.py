@@ -851,14 +851,39 @@ def roster_facts() -> str:
         "  running here - say which of the two you mean.\n"
         "\n"
         "HOW WORK MOVES BETWEEN US:\n"
-        "  /research <idea> runs the full chain automatically: Director frames it ->\n"
-        "  Analyst writes the StrategySpec -> Risk Reviewer falsifies it -> QA-bot\n"
-        "  gates the contract -> Director gives the plain-English verdict. Each stage\n"
-        "  posts publicly under its own name.\n"
+        "  /research <idea> runs the chain automatically, and since ADR-011 every\n"
+        "  stage of it is the DIRECTOR in a different mode: intake/framing ->\n"
+        "  StrategySpec Mode -> Skeptical Critic Mode -> verdict. The Analyst, Risk\n"
+        "  Reviewer and QA bot are NO LONGER stages in /research. They remain live\n"
+        "  and answer normally when @mentioned directly.\n"
+        "  Consequence the Director must state in any verdict: one agent wrote the\n"
+        "  spec AND critiqued it, so a /research transcript is not independent\n"
+        "  review, however many stages it shows.\n"
+        "  /build is UNCHANGED and still goes to the Builder: it is the only path\n"
+        "  that writes code, and it opens a PR for human review.\n"
         "  Outside a /research run there is NO automatic handoff: a bot only wakes on\n"
         "  an @mention or a reply, cannot message another bot, and nothing continues\n"
         "  after its reply ends. If work needs another persona and no run is active,\n"
         "  say who should be mentioned - never imply you have passed it on.\n"
+        "\n"
+        "ARCHITECTURE IN TRANSITION (ADR-011, supersedes ADR-007):\n"
+        "  The AGREED end state is ONE agent - the Director - absorbing the Analyst,\n"
+        "  Risk, QA and Builder roles as internal modes (Intake, Clarification,\n"
+        "  StrategySpec, Tool Planning, Evidence Review, Skeptical Critic, Report),\n"
+        "  with all numeric work delegated to deterministic Python tools.\n"
+        "  PARTIALLY DONE: the /research chain is already Director-only. What is NOT\n"
+        "  done is the rest - the Analyst, Risk Reviewer, QA bot and Builder are all\n"
+        "  still running and still do their jobs on direct @mention, and /build still\n"
+        "  goes to the Builder by design. The remaining switch-off is blocked on the\n"
+        "  eleven deterministic\n"
+        "  tools (get_market_data, run_backtest, calculate_risk_metrics, paper_deploy,\n"
+        "  ...): ZERO of them exist yet, and research/backtester, research/validation\n"
+        "  and packages/risk_engine still raise NotImplementedError.\n"
+        "  So: the Director must NOT claim it has taken over falsification, QA or\n"
+        "  spec-authoring. It has not. Describe this as a decided-but-unexecuted plan\n"
+        "  and name the tool layer as the precondition. Read docs/decisions/\n"
+        "  ADR-011-the-director-absorbs-the-specialist-roles.md before answering any\n"
+        "  question about who owns what.\n"
     )
 
 # ---------------------------------------------------------------- backend
@@ -1027,7 +1052,7 @@ class QFBot(discord.Client):
         if self.name == "director":
             @self.tree.command(
                 name="research",
-                description="Director -> Analyst -> Risk -> QA -> verdict (5 stages)",
+                description="Director: framing -> spec -> critique -> verdict (4 stages)",
                 guild=guild)
             @app_commands.describe(idea="The trading idea to research, in plain English.")
             async def _research(interaction: discord.Interaction, idea: str):

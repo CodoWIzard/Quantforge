@@ -1,4 +1,4 @@
-"""Multi-bot research pipeline: Director -> Analyst -> Risk Reviewer -> Director.
+"""Single-agent research pipeline: Director intake -> spec -> critique -> verdict.
 
 WHY THIS EXISTS: the personas were written to hand work to each other - the
 Analyst ends with "HANDOFF TO RISK REVIEWER", the Reviewer with "HANDOFF TO
@@ -8,9 +8,28 @@ the next bot, copy the critique, paste it back. The chain existed on paper and
 was performed by hand, which is exactly the kind of gap that gets described in
 Discord as if it were working.
 
-This module executes the chain. One command, four stages, each bot speaking under
-its own identity in the channel so the audit trail is visible rather than
-summarised by a single narrator.
+This module executes the chain. One command, four stages.
+
+ADR-011: the stages are now all the DIRECTOR in different modes (Intake,
+StrategySpec, Skeptical Critic, Report) rather than four separate bots. The
+Analyst, Risk Reviewer and QA bot remain live for direct @mention, but they are
+no longer wired into /research.
+
+WHAT THIS COSTS, stated plainly because it is the whole risk of the change:
+the Director now marks its own homework. Stage 2 authors the StrategySpec and
+stage 3 attacks it. Every persona in this project was deliberately scoped to
+exclude what it judges - an author who can widen the definition of "valid"
+passes every spec it writes - and merging those roles removes that separation.
+
+Two things hold the line instead, and neither is as strong as an independent
+reviewer:
+  1. The critic stage is told explicitly that it wrote the spec, that nothing
+     independent sits behind it, and to argue as if a rival wrote the text.
+  2. The verdict stage must tell the user that every stage was the same agent.
+     A four-stage transcript otherwise reads as four opinions.
+
+The real replacement is the deterministic validator layer (ADR-011); until those
+eleven tools exist, a /research run is one agent's reasoning, presented as such.
 
 DESIGN CONSTRAINTS, each one load-bearing:
 
@@ -22,14 +41,16 @@ DESIGN CONSTRAINTS, each one load-bearing:
 - Every stage sees the ORIGINAL user idea plus the FULL text of prior stages.
   Passing a summary forward is how the user's actual idea gets replaced by a
   tidier one three hops later, with nobody able to point at where it changed.
+  This matters MORE now, not less: one agent re-reading its own words is exactly
+  how a messy idea drifts into a tidy one nobody asked for.
 - One run at a time, globally. The stages share the hermes backend, one OAuth
   token and the read worktrees; parallel runs interleave into nonsense.
 - A failed stage ABORTS the run. Continuing with a hole means the Director
   produces a verdict over evidence it never received, which is worse than no
   verdict - the output looks complete either way.
-- Nothing here trades, writes code or merges anything. It is a conversation
-  conducted in public, and every guardrail in the personas still applies because
-  each stage is the same ask_hermes call a human @mention would make.
+- Nothing here trades, writes code or merges anything. Code changes are /build
+  only, which still runs through the Builder, opens a PR and is untouched by
+  this module.
 """
 from __future__ import annotations
 
@@ -79,76 +100,80 @@ class Stage:
 PIPELINE: tuple[Stage, ...] = (
     Stage(
         bot="director",
-        label="1/5 Research Director — framing",
+        label="1/4 Director — intake & framing",
         brief=(
             "A user has submitted the trading idea below. You are opening a research\n"
-            "run. Do NOT write the StrategySpec yourself - the Strategy Analyst does\n"
-            "that next, and it will receive your output verbatim.\n\n"
-            "Your job here, in under 250 words: state what the idea actually claims,\n"
-            "name every parameter that is undefined (entry, exit, timeframe, sizing,\n"
-            "risk per trade, session), and give the Analyst explicit direction on what\n"
-            "to specify and what to leave marked as unknown. If the idea is outside\n"
+            "run. This is INTAKE MODE only: do NOT write the StrategySpec yet - that\n"
+            "is the next stage, and it will receive this output verbatim.\n\n"
+            "In under 250 words: state what the idea actually claims, name every\n"
+            "parameter that is undefined (entry, exit, timeframe, sizing, risk per\n"
+            "trade, session), and set explicit direction for what the spec stage must\n"
+            "specify and what it must leave marked unknown. If the idea is outside\n"
             "BTC/ETH perps or needs live money, say so now rather than at the end."
         ),
     ),
     Stage(
-        bot="analyst",
-        label="2/5 Strategy Analyst — StrategySpec",
+        bot="director",
+        label="2/4 Director — StrategySpec Mode",
         brief=(
-            "The Research Director has framed this idea for you above. Produce ONE\n"
-            "StrategySpec in your required format, following the Director's direction.\n"
-            "Preserve the user's idea - do not substitute a tidier strategy for it, and\n"
-            "do not fill in a value nobody stated. End with your handoff naming what\n"
-            "the Risk Reviewer should try hardest to falsify."
-        ),
-    ),
-    Stage(
-        bot="risk",
-        label="3/5 Risk Reviewer — falsification",
-        brief=(
-            "Review the StrategySpec above in your required format. It was produced by\n"
-            "the Strategy Analyst from the user's idea, both of which are shown. Your\n"
-            "job is falsification, not improvement: find where this breaks. Do not\n"
-            "rewrite the strategy, and do not approve it because it reads plausibly.\n"
-            "End with your handoff to the Research Director."
-        ),
-    ),
-    Stage(
-        bot="qa",
-        label="4/5 QA-bot — contract gate",
-        brief=(
-            "You now have the full chain: the user's idea, the Director's framing, the\n"
-            "Analyst's StrategySpec and the Risk Reviewer's critique. Run your six\n"
-            "checks (JSON/schema validity, required fields, scope, invented rules,\n"
-            "clarification behaviour, demonstrability) against the StrategySpec the\n"
-            "Analyst produced.\n\n"
-            "You are a GATE, not the closing word: the Director speaks to the user after\n"
-            "you, so write for the Director, not for the user. Output your review in the\n"
-            "required JSON format. required_fixes names exactly what must be corrected;\n"
-            "approval_summary is the one sentence the Director will act on.\n"
-            "No performance numbers exist - no backtest has run - do not imply any.\n"
-            "THE ONE THING YOU MUST NEVER DO IS FIX ANYTHING. Report defects; do not\n"
-            "supply missing values or rewrite the strategy."
+            "STRATEGYSPEC MODE. Your own framing is above. Produce ONE StrategySpec\n"
+            "covering market, timeframe, direction, entry, exit, risk and assumptions.\n\n"
+            "Preserve the user's idea exactly - do not substitute a tidier or more\n"
+            "backtestable strategy for the one they described. Any field nobody stated\n"
+            "is marked MISSING with the question that would resolve it; it is never\n"
+            "filled with a default, and 'the most conservative reading' means SMALLER\n"
+            "RISK, not whichever reading would test better.\n\n"
+            "You are now the author. The next stage attacks this text, so write it to\n"
+            "be attacked: state each rule precisely enough to be proven wrong.\n"
+            "End by naming what the critic stage should try hardest to falsify."
         ),
     ),
     Stage(
         bot="director",
-        label="5/5 Research Director — verdict",
+        label="3/4 Director — Skeptical Critic Mode",
         brief=(
-            "You now have the whole chain: the user's idea, your framing, the Analyst's\n"
-            "StrategySpec, the Risk Reviewer's critique and QA's contract gate. Close\n"
-            "the run for the user in PLAIN ENGLISH - they should never have to read\n"
-            "QA's JSON to understand the answer.\n\n"
-            "Give a verdict and say plainly what it rests on. Separate the two kinds of\n"
-            "finding you were given: QA reports whether the spec is STRUCTURALLY valid\n"
-            "(fields, schema, invented rules); the Risk Reviewer reports whether the\n"
-            "IDEA survives scrutiny. A spec can pass QA and still be a bad strategy -\n"
-            "do not let a clean contract check read as an endorsement.\n\n"
-            "State what must be tested before anyone trusts this, and what specific\n"
-            "question the user has to answer for the spec to be complete. No performance\n"
-            "numbers exist - no backtest has run - so do not imply any. If you are\n"
-            "overriding something QA or the Reviewer raised, say why. Address the user\n"
-            "directly."
+            "SKEPTICAL CRITIC MODE. This overrides your usual helpful posture for this\n"
+            "stage only.\n\n"
+            "WARNING - YOU WROTE THE SPEC ABOVE. You are now marking your own work,\n"
+            "and the standing failure mode is going easy on it. Until the deterministic\n"
+            "validators exist there is no independent check behind you: whatever you\n"
+            "fail to catch here is not caught at all. Argue against yourself as if a\n"
+            "rival analyst wrote that spec and you were paid to find the hole.\n\n"
+            "Falsification, not improvement. Do NOT rewrite the strategy. Work through:\n"
+            "look-ahead bias, overfitting, sample size, unrealistic fees or slippage,\n"
+            "vague rules that cannot be coded, regime dependence, hidden leverage or\n"
+            "liquidation risk, and any field you filled that the user never stated.\n\n"
+            "Separately and explicitly, run the CONTRACT CHECK a dedicated QA stage\n"
+            "used to run: are all required fields present, is every value inside the\n"
+            "allowed scope (BTC/ETH perps, 1m/5m/15m), is any rule invented rather\n"
+            "than supplied, is the spec specific enough to be demonstrated? Report\n"
+            "structural defects separately from strategy weaknesses - they are\n"
+            "different findings and the next stage must not blur them.\n\n"
+            "Report defects. Do not fix them. No backtest has run, so no performance\n"
+            "number exists - do not imply one."
+        ),
+    ),
+    Stage(
+        bot="director",
+        label="4/4 Director — verdict",
+        brief=(
+            "REPORT MODE. You have the whole chain: the user's idea, your framing,\n"
+            "your StrategySpec and your own critique. Close the run for the user in\n"
+            "PLAIN ENGLISH.\n\n"
+            "Give a verdict - pass, caution, fail, needs_clarification or blocked -\n"
+            "and say plainly what it rests on. Keep the two kinds of finding apart:\n"
+            "whether the spec is STRUCTURALLY valid (fields, scope, invented rules) is\n"
+            "a different question from whether the IDEA survives scrutiny. A spec can\n"
+            "be perfectly well-formed and still be a bad strategy - never let a clean\n"
+            "contract check read as an endorsement.\n\n"
+            "State one thing explicitly: every stage of this run was you. Nothing here\n"
+            "was independently reviewed, and the deterministic validators that will\n"
+            "eventually check this do not exist yet (ADR-011). Say so in the verdict,\n"
+            "because a four-stage transcript looks like four opinions.\n\n"
+            "State what must be tested before anyone trusts this, and the specific\n"
+            "question the user must answer for the spec to be complete. No performance\n"
+            "numbers exist - no backtest has run - so do not imply any. Address the\n"
+            "user directly."
         ),
     ),
 )
@@ -176,11 +201,23 @@ def build_context(idea: str, who: str, done: list[StageResult]) -> str:
     Full text, never a summary. A summarised handoff is how a strategy quietly
     becomes a different strategy: each hop drops the caveats, and by the verdict
     nobody can say which stage introduced the change.
+
+    The `-----` lines are DELIMITERS, and the prompt says so explicitly. A live
+    run had a stage open its answer by echoing `----- OUTPUT OF STAGE: 3/4 ... -----`
+    back as if it were the required format: shown a structured transcript and no
+    statement of what that structure is, a model imitates it. Every framing
+    convention a prompt uses on the model must be named as such, or it is read as
+    an instruction.
     """
     parts = [
-        "RESEARCH RUN IN PROGRESS - this is an automated multi-agent pipeline.",
-        "You are one stage. Your output is passed verbatim to the next stage and is",
+        "RESEARCH RUN IN PROGRESS - a fixed sequence of stages. Every stage is the",
+        "same agent in a different mode (ADR-011); this is not four opinions.",
+        "You are ONE stage. Your output is passed verbatim to the next stage and is",
         "posted publicly in the Discord channel under your own name.",
+        "",
+        "The ----- lines below delimit context that already exists. They are not a",
+        "template: do NOT reproduce them, and do NOT open your answer with a stage",
+        "header. Write only your own stage's content.",
         "",
         f"ORIGINAL USER IDEA (from {who}) - this is the thing being specified;",
         "no stage may replace it with a different idea:",
