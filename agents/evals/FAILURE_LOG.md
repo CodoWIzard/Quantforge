@@ -53,33 +53,63 @@ reason histogram and warns when it collapses to a single reason.
 ## F-002 — The 2% hard risk limit is documented but not enforced
 
 **Severity:** critical
-**Status:** OPEN — `C003` fails in every run; needs a decision, then a fix
+**Status:** RESOLVED 2026-09-28 — enforced in `risk_engine/policies.py`; C002 and C003 pass
 **Found by:** control C002 passing for the wrong reason, then C003 isolating it
 
-`compile_candidate` has exactly one risk check: `risk_per_trade_pct > daily_loss_limit_pct`.
-The platform hard limit of 2% (V2/U001's stated rationale) appears in no code path.
+`compile_candidate` had exactly one risk check: `risk_per_trade_pct > daily_loss_limit_pct`.
+The platform hard limit of 2% (V2/U001's stated rationale) appeared in no code path.
 
-| candidate | verdict | why |
+| candidate | before | after |
 |---|---|---|
-| risk 0.5%, daily 1.5% | COMPILE | correct |
-| risk 50%, daily 1.5% | REJECT ImpossibleRiskError | caught, but by the *relational* rule |
-| risk 3.0%, daily 1.5% | REJECT ImpossibleRiskError | looks right, is an accident |
-| **risk 3.0%, daily 10.0%** | **COMPILE** | 50% over the hard limit, accepted silently |
+| risk 0.5%, daily 1.5% | COMPILE | COMPILE |
+| risk 50%, daily 1.5% | REJECT (relational) | REJECT (policy, names the limit) |
+| risk 3.0%, daily 1.5% | REJECT (accident) | REJECT (policy, names the limit) |
+| **risk 3.0%, daily 10.0%** | **COMPILE** | **REJECT (policy)** |
+| risk 1.0%, daily 6.0% | COMPILE | REJECT — daily ceiling, never checked before |
+| risk 1.0%, daily 5.0%, positions 7 | COMPILE | REJECT — position ceiling, never checked before |
 
 3.0 is schema-legal (`le=5`) and under a generous daily limit the relational rule never
-fires. C002 passing hid this; only C003 — same danger, daily limit raised so the accidental
+fired. C002 passing hid this; only C003 — same danger, daily limit raised so the accidental
 catch is removed — exposed it.
 
-Two questions for the team before I touch it, because both change the contract:
+### Resolution
 
-1. Is 2% a hard platform ceiling, or a default the user may raise with confirmation?
-2. Does it live in the pydantic model (`le=2`) or in `risk_engine/policies.py`? The model
-   is stricter and cannot be bypassed; the policy module is the documented owner of hard
-   limits and is entirely `NotImplementedError` today.
+Both questions were answered by the module's own docstring plus Jaedyn's placement call:
+a **hard ceiling** (policies.py line 1: "limits that a strategy cannot raise and an agent
+cannot override"), living in **`risk_engine/policies.py`**, not in the pydantic model.
+
+`HardLimits.check_risk_block(risk)` returns a list of `LimitBreach` — every ceiling
+breached, not the first, so a strategy over on two limits is not reported as a one-limit
+problem. `_check_risk_consistency` calls it BEFORE the relational rule and translates
+breaches into the existing `ImpossibleRiskError`. Two ceilings now coexist on purpose: the
+pydantic bounds are the schema envelope (widest representable), `HardLimits` is the
+operational ceiling (widest accepted). A value between them is schema-legal and
+policy-illegal — intended, and the reason a breach arrives as a typed policy refusal
+naming the limit instead of a generic validator message.
+
+`risk_engine` still imports nothing from `strategy_schema`: it reports breaches as data and
+the caller picks the exception. The layer that says no does not depend on the layer it
+polices.
+
+### The fix exposed a second, subtler hole in the control set
+
+With the ceiling restored, all nine controls passed — the state the standing lessons warn
+about. Removing the ceiling again (mutation test) should have failed C002 **and** C003; it
+failed only C003. C002's daily limit of 1.5 means the relational rule catches the same
+input, and since both rules raise `ImpossibleRiskError`, matching on the exception class
+could not tell them apart. **An exception class is not a mechanism.** The control would
+have kept passing after the limit it exists to test was deleted.
+
+Controls now support `expected_reason_contains`, and C001/C002/C003 pin
+`"platform hard limit"`. Verified by mutation: loosening `HardLimits` to the schema
+envelope fails C002 and C003. C001 still passes, correctly — 50 exceeds even the loosened
+envelope, so its absolute check genuinely fires.
 
 **Lesson.** A limit stated only in a fixture's `why` field is a limit nobody enforces. Every
 numeric policy bound needs a named owner in code and a control that exercises it with the
-neighbouring checks disabled.
+neighbouring checks disabled — and the control must assert WHICH rule fired, because a
+shared exception type lets a dead check keep reporting green. The way to prove a control
+tests what it claims is to break the thing it tests and watch it fail.
 
 ---
 
@@ -153,9 +183,10 @@ parsed" keeps a demo from implying capability that does not exist.
 
 | id | summary | blocking | owner |
 |---|---|---|---|
-| F-002 | 2% hard risk limit unenforced; needs a placement decision | contract change — needs Jayden | Jaedyn |
 | F-003 | look-ahead detection is incidental to the allowlist | backtester unimplemented | Jaedyn |
 | — | model-layer dimensions unmeasured | needs a model-backed run | both |
+
+Closed: F-002 (2026-09-28, hard limits enforced in `risk_engine/policies.py`).
 
 ## Standing lessons
 
@@ -163,7 +194,11 @@ parsed" keeps a demo from implying capability that does not exist.
 2. Isolate one variable per control, and keep a negative control — a harness where
    nothing can fail proves nothing.
 3. When a control passes, ask which check fired. Right answer, wrong mechanism is fragile.
-4. Label the layer on every claim. A model-layer property listed beside deterministic
+   Assert the mechanism, not the exception class: two rules sharing one exception type let
+   a control keep passing after the rule it tests is gone (F-002).
+4. Prove a control works by breaking what it tests and watching it fail. An all-green
+   control set is a claim about the controls, not yet about the code.
+5. Label the layer on every claim. A model-layer property listed beside deterministic
    results is read as proven.
-5. Corpus exists / corpus run deterministically / corpus run against a model are three
+6. Corpus exists / corpus run deterministically / corpus run against a model are three
    different claims. Report them on three lines.

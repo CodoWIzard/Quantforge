@@ -248,6 +248,13 @@ def score_controls() -> dict:
 
         if ok and ctl.get("expected_error"):
             ok = res["error_type"] == ctl["expected_error"]
+        # Mechanism check. An exception CLASS is not a mechanism: two different rules
+        # both raise ImpossibleRiskError, so C002 kept passing after the hard-limit
+        # ceiling was removed because its relational rule caught the same input. A
+        # control that cannot name the rule that fired cannot detect that the rule it
+        # claims to test is gone (F-002).
+        if ok and ctl.get("expected_reason_contains"):
+            ok = ctl["expected_reason_contains"].lower() in res["reason"].lower()
         if ok and "expected_question_count" in ctl:
             ok = res["question_count"] == ctl["expected_question_count"]
 
@@ -256,18 +263,23 @@ def score_controls() -> dict:
             "property": ctl["property_under_test"],
             "expected": ctl["expected_verdict"],
             "expected_error": ctl.get("expected_error"),
+            "expected_reason_contains": ctl.get("expected_reason_contains"),
             "passed": ok,
             **res,
         })
 
         if not ok:
+            want = ctl["expected_verdict"]
+            if ctl.get("expected_error"):
+                want += "/" + ctl["expected_error"]
+            if ctl.get("expected_reason_contains"):
+                want += "/reason~" + ctl["expected_reason_contains"]
             entry = {
                 "id": ctl["id"],
                 "dimension": "refusal_for_the_right_reason",
                 "detail": (
-                    f"expected {ctl['expected_verdict']}"
-                    f"{'/' + ctl['expected_error'] if ctl.get('expected_error') else ''}, "
-                    f"got {res['verdict']}/{res['error_type']} — {res['reason'][:120]}"
+                    f"expected {want}, got {res['verdict']}/{res['error_type']}"
+                    f" — {res['reason'][:120]}"
                 ),
             }
             # controls flagged as currently_failing are tracked, not merge-blocking:

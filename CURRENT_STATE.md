@@ -48,9 +48,30 @@ Contracts are frozen; implementation has not started.
 - **The 13/13 unsafe-refusal number is not safety evidence** (FAILURE_LOG F-001): every V2
   fixture is prose, hence under-specified, hence refused for a missing stop loss with the
   danger never examined. All 13 raise the identical error. The controls carry the evidence.
-- **OPEN, found by this work:** the 2% hard risk limit exists in no code path (F-002).
-  `risk_per_trade_pct: 3.0` with `daily_loss_limit_pct: 10.0` compiles clean. Needs a
-  decision — pydantic `le=2` or `risk_engine/policies.py` — before a fix.
+- **F-002, found by this work and now CLOSED (2026-09-28):** the 2% hard risk limit
+  existed in no code path — `risk_per_trade_pct: 3.0` with `daily_loss_limit_pct: 10.0`
+  compiled clean. Enforced in `risk_engine/policies.py`; see the next section.
+
+### Platform hard limits — F-002 closed, 2026-09-28
+- `risk_engine/policies.py` is now **working code**, not a skeleton. `HardLimits.
+  check_risk_block(risk)` returns a `LimitBreach` per ceiling breached (all of them, not
+  the first) for `risk_per_trade_pct` (2%), `daily_loss_limit_pct` (5%) and
+  `max_open_positions` (5). `_check_risk_consistency` calls it BEFORE the relational
+  rule and raises `ImpossibleRiskError` naming the limit.
+- The rest of `risk_engine` (pre_trade, kill_switch) is still `NotImplementedError` —
+  Weeks 13-14. `tests/test_risk_engine.py` stays blanket-xfail for those; the ceiling has
+  its own non-xfail file `tests/test_hard_limits.py` (20 tests) so a real check is never
+  reported as xfail.
+- **Two ceilings, deliberately different.** The pydantic bounds (`le=5`) are the schema
+  envelope — the widest value the contract can represent. `HardLimits` is the operational
+  ceiling. A value between them is schema-legal and policy-illegal; that is intended, and
+  it is why a breach arrives as a typed policy refusal naming the limit rather than a
+  generic validator message. Do not "tidy" this into one number.
+- Fixing it exposed a second hole: C002 still passed with the ceiling deleted, because its
+  daily limit lets the *relational* rule catch the same input and both rules raise
+  `ImpossibleRiskError`. Controls now support `expected_reason_contains` (C001/C002/C003
+  pin `"platform hard limit"`), and `test_removing_the_hard_limit_fails_the_controls_
+  that_test_it` is a standing mutation test. An exception class is not a mechanism.
 
 ### Experiment ladder (experiments/)
 - All ten rungs 001–010 scaffolded with build description, exit gate and RESULT.md template
@@ -68,7 +89,9 @@ Contracts are frozen; implementation has not started.
 - These are **research artifacts** — the corpus and expected behaviour. No model has been
   run against them yet, so Experiment 002's gate is NOT met. The compiler still raises.
 
-### Tests — **154 passed, 38 xfailed**
+### Tests — **584 passed, 34 xfailed, 10 skipped** (verified 2026-09-28)
+- 1 pre-existing failure, unrelated: `test_progress_board.py::
+  test_colour_blurple_while_in_progress`, a hardcoded due date now in the past.
 - `test_contracts.py` (14) and `test_agent_contracts.py` — run today, assert the contracts
 - `test_experiment_002_fixtures.py` (56) — locks the B2/B4/V2 corpus
 - `test_repo_facts.py` (9) — bots must describe the repo from disk, never from memory
@@ -101,9 +124,10 @@ instruction drafts for a future hosted-model pipeline which has never been run.
 - No model endpoint or hosted agent — instructions are drafts never run against a model
 - No Binance data downloaded. No collector running. No Parquet lake.
 - No PostgreSQL instance, no schema, no migrations
-- **No executable logic in `risk_engine`, `exchange_contracts`, `backtester` or
-  `validation`** — every body still raises NotImplementedError. (`strategy_schema` is
-  the exception: B3 implemented it.)
+- **No executable logic in `exchange_contracts`, `backtester` or `validation`** — every
+  body still raises NotImplementedError. Two exceptions: `strategy_schema` (B3) and
+  `risk_engine/policies.py` (F-002 fix, 2026-09-28). `risk_engine`'s `pre_trade` and
+  `kill_switch` still raise.
 - Do not describe implementation state from this file alone — it lags merges. The bots
   count `raise NotImplementedError` from source at request time; that scan wins.
 - No backtest has ever been run. No metrics exist. Any number quoted about strategy

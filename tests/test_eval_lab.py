@@ -103,6 +103,63 @@ def test_the_hard_risk_limit_control_is_present_by_name():
     assert c["mutation"]["risk.risk_per_trade_pct"] > 2
 
 
+def test_risk_controls_pin_the_mechanism_not_just_the_exception_class():
+    """Two different rules both raise ImpossibleRiskError (F-002).
+
+    Matching on the class alone let C002 keep passing after the hard-limit check was
+    removed, because its relational rule caught the same input. Each risk control must
+    name the rule it expects to fire.
+    """
+    for c in CONTROLS["controls"]:
+        if c.get("expected_error") == "ImpossibleRiskError":
+            assert c.get("expected_reason_contains"), (
+                f"{c['id']} expects ImpossibleRiskError but not WHICH rule raised it; "
+                "a shared exception type lets a dead check report green"
+            )
+
+
+def test_removing_the_hard_limit_fails_the_controls_that_test_it():
+    """Mutation test: break what a control tests and it must fail.
+
+    An all-green control set is a claim about the controls, not yet about the code.
+    This loosens HardLimits to the schema envelope — i.e. reintroduces F-002 exactly —
+    and asserts C002 and C003 both go red. If they stay green they are not testing the
+    ceiling, whatever their names say.
+
+    C001 (50%) is deliberately NOT asserted here: it exceeds even the loosened
+    envelope, so its absolute check still legitimately fires.
+    """
+    import sys
+
+    sys.path.insert(0, str(REPO))
+    from agents.evals.run_lab import score_controls
+    from packages.risk_engine.policies import HardLimits
+
+    before = {r["id"]: r["passed"] for r in score_controls()["rows"]}
+    assert before["C002-risk-3pct-over-hard-limit"]
+    assert before["C003-risk-3pct-generous-daily-limit"]
+
+    original = (HardLimits.max_risk_per_trade_pct, HardLimits.max_daily_loss_pct)
+    try:
+        HardLimits.max_risk_per_trade_pct = 5.0  # the pydantic ceiling
+        HardLimits.max_daily_loss_pct = 20.0
+        after = {r["id"]: r["passed"] for r in score_controls()["rows"]}
+    finally:
+        HardLimits.max_risk_per_trade_pct, HardLimits.max_daily_loss_pct = original
+
+    for cid in (
+        "C002-risk-3pct-over-hard-limit",
+        "C003-risk-3pct-generous-daily-limit",
+    ):
+        assert not after[cid], (
+            f"{cid} still passes with the hard limit removed — it is not testing the "
+            "ceiling it claims to test"
+        )
+
+    # the ceiling is restored, so test order cannot leak this mutation into other tests
+    assert all(r["passed"] for r in score_controls()["rows"])
+
+
 def test_layer_boundary_controls_expect_compile_and_say_why():
     """C005 (injection) and C006 (real money) deliberately COMPILE. A future editor
     'fixing' them would push content policy into a schema validator."""
@@ -205,12 +262,27 @@ def test_prose_artifacts_exist(doc):
     assert (EVALS / doc).exists()
 
 
-def test_failure_log_tracks_the_open_hard_limit_finding():
-    """F-002 is an open contract question. If it is removed from the log it must be
-    because it was fixed — and then C003 stops failing and this test's sibling catches it."""
+def test_failure_log_records_the_hard_limit_finding_and_its_resolution():
+    """F-002 stays in the log after the fix — a closed finding is the evidence that the
+    ceiling is enforced on purpose, and the reason nobody should 'simplify' the two-ceiling
+    design. F-001's caveat must survive too."""
     text = (EVALS / "FAILURE_LOG.md").read_text()
     assert "F-002" in text
+    assert "RESOLVED" in text
     assert "F-001" in text and "vagueness" in text
+
+
+def test_no_control_is_marked_currently_failing_without_an_open_finding():
+    """`currently_failing` downgrades a control from merge-blocking to tracked.
+
+    Left behind after a fix, it silently re-permits the failure it was granted for.
+    """
+    log = (EVALS / "FAILURE_LOG.md").read_text()
+    for c in CONTROLS["controls"]:
+        if c.get("currently_failing"):
+            assert "Status:** OPEN" in log, (
+                f"{c['id']} is exempted as currently_failing but no finding is OPEN"
+            )
 
 
 def test_scoring_prose_and_rubric_json_agree():

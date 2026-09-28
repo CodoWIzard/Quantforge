@@ -23,6 +23,7 @@ from pathlib import Path
 
 from pydantic import ValidationError
 
+from packages.risk_engine.policies import HardLimits
 from packages.strategy_schema.errors import (
     ImpossibleRiskError,
     MissingParameterError,
@@ -221,22 +222,41 @@ def _check_indicators(entry: dict) -> None:
 # ---------------------------------------------------------------------------
 
 def _check_risk_consistency(risk: dict) -> None:
-    """Raise ImpossibleRiskError for contradictory or out-of-range values."""
+    """Raise ImpossibleRiskError for values outside hard policy or self-contradictory.
+
+    TWO INDEPENDENT CHECKS, in this order, and the order is the point:
+
+    1. **Absolute** — every value against the platform ceiling in
+       `risk_engine.policies.HardLimits`. Owned by the risk engine, not by this
+       module: the compiler asks, it does not decide.
+    2. **Relational** — `risk_per_trade_pct > daily_loss_limit_pct`, a single trade
+       that would breach the day's budget. Schema-legal values can still be
+       mutually absurd.
+
+    The absolute check runs FIRST because the relational one used to mask it
+    (F-002): `risk 3.0 / daily 1.5` was refused and looked like limit enforcement,
+    while `risk 3.0 / daily 10.0` — 50% over the 2% ceiling — compiled clean, since
+    nothing in any code path held the ceiling. Two checks that can catch the same
+    input for different reasons must be ordered by which one OWNS the rule, or a
+    passing test credits the wrong mechanism and evaporates on the next refactor.
+    """
+    breaches = HardLimits.check_risk_block(risk)
+    if breaches:
+        raise ImpossibleRiskError(
+            "risk values exceed platform hard limits: "
+            + "; ".join(str(b) for b in breaches)
+            + ". These ceilings are policy, not defaults: they cannot be raised by "
+            "a strategy or an agent (§35)."
+        )
+
     rpt = risk.get("risk_per_trade_pct")
     dll = risk.get("daily_loss_limit_pct")
-    mop = risk.get("max_open_positions")
 
-    if rpt is not None and dll is not None:
-        if rpt > dll:
-            raise ImpossibleRiskError(
-                f"risk_per_trade_pct ({rpt}) exceeds daily_loss_limit_pct ({dll}): "
-                "a single trade would breach the daily limit."
-            )
-        if mop is not None and rpt * mop < dll * 0.0:
-            # structural impossibility guard — currently the schema ceilings
-            # (5% per trade, 20% daily) do allow any reasonable combination;
-            # add more checks here as the risk engine matures.
-            pass
+    if rpt is not None and dll is not None and rpt > dll:
+        raise ImpossibleRiskError(
+            f"risk_per_trade_pct ({rpt}) exceeds daily_loss_limit_pct ({dll}): "
+            "a single trade would breach the daily limit."
+        )
 
 
 # ---------------------------------------------------------------------------
