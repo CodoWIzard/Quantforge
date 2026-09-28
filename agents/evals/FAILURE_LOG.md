@@ -179,12 +179,73 @@ parsed" keeps a demo from implying capability that does not exist.
 
 ---
 
+## F-005 — The model backend supplies facts the prompt never gave it
+
+**Severity:** critical — blocks the model layer of this lab
+**Status:** OPEN — needs an invocation convention, then a re-run of Experiment 001
+**Found by:** Experiment 001's fixture reply naming an instrument nobody asked about
+
+`run_001.py` sends a prompt containing no instrument, no account size and no project
+name. The reply: *"Model call succeeded and the MNQ1! futures trading assistant is
+online and ready."* A direct probe confirmed the backend volunteers the operator's
+personal trading context — MNQ1!, a $25,000 paper account, and on a second probe a
+gold MGC bot and a January 2027 live-deployment date. None of it is QuantForge's.
+
+The 14,576 cache-write tokens recorded against a 3-token prompt are that injected
+context. It is measurable, which is the one piece of good news here.
+
+`--ignore-user-config --ignore-rules` does NOT suppress it. It leaked *more*. The
+isolation boundary is the **profile**:
+
+| invocation | answer to "what is my instrument and project?" |
+|---|---|
+| `hermes -z` (sticky default `futures`) | MNQ1!, $25k, MGC, Jan 2027 |
+| `hermes -p default -z` | MNQ1! + the QuantForge path |
+| `hermes -p dev -z` | `NO CONTEXT AVAILABLE` |
+
+`services/discord-bots/bots.py:898` sets `HERMES = shutil.which("hermes")` and passes
+no `-p`, so all six personas inherit whatever profile happens to be sticky. The
+profile can change under them with no code change and no log line.
+
+### Why this blocks the lab specifically
+
+`run_lab.py` prints four dimensions as NOT MEASURED pending a model endpoint:
+tool_usage, **groundedness**, criticism_quality, self_review_disclosure. Wiring the
+harness to this backend would score groundedness against a model that is being handed
+unearned facts — and it would score **well**, because the facts are true. A metric
+that rewards the exact behaviour it exists to detect is worse than no metric.
+
+It also re-opens the venue blind spot already recorded in this repo: a live run wrote
+"Binance, BTCUSDT perp" while no Binance symbol module exists, and the critic stage
+then certified that no field was invented. If the backend can supply a plausible
+instrument from outside the prompt, "the model invented it" and "the profile supplied
+it" are indistinguishable from the transcript. Neither is acceptable in a spec.
+
+### Fix
+
+An explicit clean profile on every programmatic invocation — `hermes -p <profile>` —
+in `bots.py` (chat, build and every orchestrator stage) and in `run_001.py`. `dev` is
+verified clean today, but it is somebody's working profile; a dedicated `quantforge`
+profile is the durable answer, and creating one IS an ADR because it becomes part of
+how the system is deployed.
+
+Do not rely on a flag. `--ignore-user-config` reads like the right switch and is not.
+
+**Lesson.** Before scoring a model on groundedness, probe the backend with a question
+the prompt does not answer and demand it say it does not know. An agent harness
+inherits the ambient identity of whatever account runs it, and every fact that
+arrives that way is invisible in the transcript and true — so it survives review.
+Assert the negative: a clean backend must be able to say NO CONTEXT AVAILABLE.
+
+---
+
 ## Open items
 
 | id | summary | blocking | owner |
 |---|---|---|---|
 | F-003 | look-ahead detection is incidental to the allowlist | backtester unimplemented | Jaedyn |
-| — | model-layer dimensions unmeasured | needs a model-backed run | both |
+| F-005 | backend supplies facts the prompt never gave; profile leak | needs `-p` convention + ADR if a quantforge profile is created | Jaedyn |
+| — | model-layer dimensions unmeasured | **blocked by F-005**, not by the endpoint | both |
 
 Closed: F-002 (2026-09-28, hard limits enforced in `risk_engine/policies.py`).
 
@@ -202,3 +263,6 @@ Closed: F-002 (2026-09-28, hard limits enforced in `risk_engine/policies.py`).
    results is read as proven.
 6. Corpus exists / corpus run deterministically / corpus run against a model are three
    different claims. Report them on three lines.
+7. Probe the backend before trusting it as a measuring instrument. Ask it something the
+   prompt does not answer; a clean one must say it does not know. Facts that arrive from
+   the ambient environment are true, invisible in the transcript, and survive review.
