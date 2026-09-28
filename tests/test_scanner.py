@@ -101,14 +101,20 @@ def test_rejects_impossible_direction():
 def test_highest_score_wins():
     a = (model("A", ModelResult(60, "LONG")), ModelResult(60, "LONG"))
     b = (model("B", ModelResult(80, "LONG")), ModelResult(80, "LONG"))
-    assert select_best([a, b])[0].key == "B"
+    best = select_best([a, b])
+    # select_best returns None when nothing qualifies; asserting it first turns a
+    # "NoneType is not subscriptable" traceback into a statement about the selector.
+    assert best is not None
+    assert best[0].key == "B"
 
 
 def test_tie_within_band_falls_back_to_rank():
     """Within 3 points the better-evidenced model wins, not the higher score."""
     a = (model("A", ModelResult(60, "LONG"), rank=1), ModelResult(60, "LONG"))
     b = (model("B", ModelResult(62, "LONG"), rank=9), ModelResult(62, "LONG"))
-    assert select_best([a, b])[0].key == "A"
+    best = select_best([a, b])
+    assert best is not None
+    assert best[0].key == "A"
 
 
 def test_long_and_short_both_qualifying_stands_aside():
@@ -194,7 +200,9 @@ def test_candle_rejects_inverted_high_low():
 def test_window_matches_minute_not_just_hour():
     """13:00 is not NY_AM; NY_AM opens 13:30."""
     assert current_window(datetime(2026, 9, 11, 13, 0, tzinfo=UTC)) is None
-    assert current_window(datetime(2026, 9, 11, 13, 30, tzinfo=UTC)).name == "NY_AM"
+    w = current_window(datetime(2026, 9, 11, 13, 30, tzinfo=UTC))
+    assert w is not None, "13:30 must open NY_AM"
+    assert w.name == "NY_AM"
 
 
 def test_next_window_wraps_past_midnight():

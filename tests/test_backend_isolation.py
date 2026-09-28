@@ -36,15 +36,6 @@ def _existing(paths: list[Path]) -> list[Path]:
     return [p for p in paths if p.exists()]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "F-005 OPEN: bots.py and builder.py invoke hermes with no -p, so the personas "
-        "inherit the host's sticky profile. strict=True — when the fix lands this test "
-        "starts failing as XPASS and the marker must be deleted, so the gap cannot be "
-        "quietly closed without the convention being asserted."
-    ),
-)
 @pytest.mark.parametrize("path", _existing(INVOKERS), ids=lambda p: p.name)
 def test_hermes_invocations_pass_an_explicit_profile(path: Path):
     """A hermes argument list must contain '-p' or '--profile'.
@@ -117,14 +108,59 @@ def test_experiment_001_records_the_contamination_finding():
     assert "NO CONTEXT AVAILABLE" in result
 
 
-def test_run_001_does_not_still_claim_token_counts_are_unavailable():
+def test_run_001_reads_cost_from_the_usage_file_not_a_dashboard():
     """`--usage-file` surfaces tokens and cost, so the manual-dashboard instruction is
-    stale. Left in place it teaches the next person to hand-copy numbers that a flag
-    already produces — and hand-copied numbers are how fabricated metrics enter."""
+    stale. Left in place it teaches the next person to hand-copy numbers a flag already
+    produces — and hand-copied numbers are how fabricated metrics enter a report.
+
+    Checks the instruction is gone, not the word: 'dashboard' legitimately appears in
+    prose explaining why hand-copying is wrong.
+    """
     script = (REPO / "experiments" / "001-model-call" / "run_001.py").read_text()
-    if "--usage-file" not in script:
-        pytest.xfail("run_001.py not yet updated to use --usage-file (F-005 follow-up 1)")
-    assert "dashboard" not in script.lower()
+    assert "--usage-file" in script
+    assert "Record manually from the model provider dashboard" not in script
+    # the cost gate must actually read the file, not just pass the flag
+    assert "_read_usage" in script
+
+
+def test_run_001_probes_the_backend_for_contamination():
+    """A green 001 must mean the backend was clean, not merely that it answered.
+
+    Without this the experiment can pass on a contaminated profile and the next person
+    reads 'gate MET' as licence to score the model layer (F-005).
+    """
+    script = (REPO / "experiments" / "001-model-call" / "run_001.py").read_text()
+    assert "UNKNOWN" in script, "no contamination probe assertion"
+    assert "_probe_contamination" in script
+
+
+def test_builder_requires_the_profile_as_a_keyword_argument():
+    """`hermes_profile` must have no default.
+
+    A default would let a new call site omit it and inherit whatever the default names
+    — the failure would surface as odd model behaviour, not as a missing argument.
+    """
+    import ast
+
+    tree = ast.parse((BOTS / "builder.py").read_text())
+    fn = next(
+        n for n in ast.walk(tree)
+        if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef)) and n.name == "build"
+    )
+    names = [a.arg for a in fn.args.kwonlyargs]
+    assert "hermes_profile" in names, "builder.build() takes no hermes_profile"
+    idx = names.index("hermes_profile")
+    assert fn.args.kw_defaults[idx] is None, (
+        "hermes_profile has a default; a new call site could silently omit it"
+    )
+
+
+def test_the_default_profile_is_the_dedicated_one():
+    """Defaults matter more than the flag: an unset env var is the common path."""
+    source = (BOTS / "bots.py").read_text()
+    assert '"quantforge"' in source or "'quantforge'" in source, (
+        "no dedicated profile named as the default"
+    )
 
 
 def test_no_invocation_relies_on_ignore_user_config_for_isolation():

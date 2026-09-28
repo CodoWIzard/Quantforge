@@ -1,7 +1,7 @@
 # Experiment 001 — result
 
-**Status:** RUN 2026-09-28. Gate MET for the stated wording; a finding blocks
-downstream use of the result (see F-005).
+**Status:** RUN 2026-09-28, then RE-RUN clean the same day after fixing F-005.
+Gate MET, and the result is now usable for what it was meant to unblock.
 **Gate:** Reliable authentication, logging and cost visibility.
 
 ## Hypothesis
@@ -72,27 +72,48 @@ The isolation boundary is the **profile**, not a flag:
 passes no `-p`, so all six personas inherit whichever profile is sticky at the time.
 See FAILURE_LOG F-005.
 
+## Re-run after the fix (same day)
+
+    $ .venv/bin/python experiments/001-model-call/run_001.py
+    profile       : quantforge
+    Authentication : OK (hermes responded)
+    Structured JSON: OK (keys: ['experiment', 'message', 'status'])
+    Model message  : Model call succeeded and Claude Sonnet 4-6 is responding
+                     correctly as a test fixture for QuantForge Experiment 001.
+    Compute seconds: 5.09s
+    Tokens         : 3 in / 45 out / 2185 cache-write / 12797 total
+    Cost           : $0.01204695 (1 call, claude-sonnet-4-6 via anthropic)
+    Contamination probe (F-005): clean, backend replied 'UNKNOWN'
+    Experiment 001 exit gate: MET.
+    EXIT=0
+
+The reply now names the model rather than the operator's instrument, and cache-write
+tokens fell from **14,576 to 2,185** for the same 3-token prompt. The token count is
+the objective evidence; the reply wording is a model choice that could vary between
+runs, so it is not the thing to rely on.
+
+The script now enforces what it previously only reported: it passes `-p`, reads token
+counts and cost from `--usage-file`, and runs a contamination probe as a separate call
+whose failure fails the experiment. Cost visibility is PASSED, not PARTIAL.
+
 ## Does the gate license the next step?
 
-Yes as written, no in effect. The gate wording ("authentication, logging, cost
-visibility") never asked whether the call was *clean*, so a pass here does not
-license using this harness to score the model layer. Logged rather than silently
-reinterpreted.
+Now yes. Before the fix it did not: the gate wording ("authentication, logging, cost
+visibility") never asked whether the call was *clean*, so a green gate would have
+licensed scoring the model layer against a contaminated backend. Recorded rather than
+silently reinterpreted, and the probe now makes the clean property part of the gate
+instead of a caveat in prose.
 
 ## Decision
 
-**Proceed to 002/004 for the compiler and critic, but do NOT wire the model layer of
-`run_lab.py` to `hermes -z` until F-005 is fixed.** Scoring groundedness against a
-backend that supplies unearned facts measures the operator's profile, not the agent
-— and it would score *well* while doing it, which is the failure mode that hides.
+**Proceed.** F-005 is fixed under ADR-013 (dedicated `quantforge` profile, explicit
+`-p` everywhere, required keyword in `builder.build()`). The model layer of
+`run_lab.py` is no longer blocked by contamination.
 
-Two follow-ups, both small:
-1. `run_001.py` should pass `--usage-file` and assert `completed == true`, then
-   delete its manual-dashboard paragraph and report cost visibility as full.
-2. Every programmatic `hermes` invocation needs an explicit `-p <clean-profile>`.
-
-No ADR yet: the fix is an invocation convention, not an architecture change. If a
-dedicated `quantforge` profile is created for the bots, that IS an ADR.
+Verified three independent ways: the script's own probe, the token-count drop, and
+`services/discord-bots/probe_isolation.py` — a live end-to-end run through
+`bots.ask_hermes`, the exact path the six personas use, returning UNKNOWN on 3/3
+probes with none of the previously-leaked strings.
 
 ## Measured cost
 

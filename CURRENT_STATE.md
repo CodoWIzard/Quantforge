@@ -76,6 +76,18 @@ Contracts are frozen; implementation has not started.
 ### Experiment ladder (experiments/)
 - All ten rungs 001–010 scaffolded with build description, exit gate and RESULT.md template
 
+### Experiment 001 — DONE 2026-09-28, gate MET
+- One model call via the hermes CLI returns schema-shaped JSON. Auth, logging and cost
+  visibility all demonstrated; tokens and cost come from `--usage-file`, never from a
+  dashboard by hand.
+- The run exposed F-005 (backend leaking the host profile's personal context) and was
+  re-run clean after ADR-013. Cache-write tokens for the same 3-token prompt fell from
+  14,576 to 2,185.
+- The script now fails unless the backend answers UNKNOWN to a question the prompt
+  never answered, so "the backend was clean" is part of the gate, not a footnote.
+- This unblocks the model layer of the eval lab. It does NOT mean the model layer is
+  measured — that still needs the harness wired up (`run_evals.py` is unimplemented).
+
 ### Experiment 002 research artifacts — DONE 2026-09-07 (Jaedyn: B2, B4, V2)
 - **B2** `experiments/002-strategy-compiler/ideas/I001–I020.json` — 20 BTC/ETH strategy
   ideas: 7 vague, 8 partial, 2 complete, 3 edge. 66 annotated missing fields.
@@ -104,7 +116,15 @@ Contracts are frozen; implementation has not started.
 ### Discord agent service — **running**
 `services/discord-bots/` runs six personas in one process, each with its own
 gateway identity: Research_Director, Strategy-Analyst, Risk-Reviewer, QA-bot,
-Builder_1, Admin-bot. These are NOT the `agents/` directory — that holds
+Builder_1, Admin-bot.
+- **Backend profile (ADR-013, F-005):** every `hermes` call passes `-p quantforge`,
+  a dedicated profile with no personal context. Without it the CLI inherits the
+  host's sticky profile and injects that profile's trading context into the prompt —
+  Experiment 001 got "the MNQ1! futures trading assistant" from a prompt naming no
+  instrument. `--ignore-user-config` does NOT fix this. `default` and `futures` both
+  leak. `builder.build()` takes `hermes_profile` as a required keyword.
+  Live proof: `services/discord-bots/probe_isolation.py` (real model, not in tests/).
+  CI proof: `tests/test_backend_isolation.py`, 9 tests over source text. These are NOT the `agents/` directory — that holds
 instruction drafts for a future hosted-model pipeline which has never been run.
 - Chat (@mention / `/ask`) is read-only: real file reads in a scratch worktree,
   every write discarded.
@@ -121,7 +141,8 @@ instruction drafts for a future hosted-model pipeline which has never been run.
 
 ## What does NOT exist yet
 - No Azure resources provisioned. No Terraform applied. No resource group.
-- No model endpoint or hosted agent — instructions are drafts never run against a model
+- No hosted/Foundry-style agent — `agents/` instructions are drafts never run against a
+  model. (A working model CALL exists: Experiment 001. The two are different things.)
 - No Binance data downloaded. No collector running. No Parquet lake.
 - No PostgreSQL instance, no schema, no migrations
 - **No executable logic in `exchange_contracts`, `backtester` or `validation`** — every

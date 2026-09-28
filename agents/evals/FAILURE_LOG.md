@@ -181,8 +181,8 @@ parsed" keeps a demo from implying capability that does not exist.
 
 ## F-005 — The model backend supplies facts the prompt never gave it
 
-**Severity:** critical — blocks the model layer of this lab
-**Status:** OPEN — needs an invocation convention, then a re-run of Experiment 001
+**Severity:** critical — blocked the model layer of this lab
+**Status:** RESOLVED 2026-09-28 — dedicated `quantforge` profile + explicit `-p` (ADR-013)
 **Found by:** Experiment 001's fixture reply naming an instrument nobody asked about
 
 `run_001.py` sends a prompt containing no instrument, no account size and no project
@@ -231,6 +231,41 @@ how the system is deployed.
 
 Do not rely on a flag. `--ignore-user-config` reads like the right switch and is not.
 
+### Resolution (2026-09-28)
+
+A dedicated `quantforge` profile, created with no personal context (empty
+`memories/USER.md`), and an explicit `-p` on every programmatic invocation. ADR-013
+records the decision and the rejected alternatives.
+
+- `bots.py` — `HERMES_PROFILE` (env-overridable via `QUANTFORGE_HERMES_PROFILE`,
+  default `quantforge`), passed on the chat path and forwarded to the build path.
+- `builder.py` — `hermes_profile` is a **required** keyword argument, so a new call
+  site fails at the call rather than inheriting a default.
+- `run_001.py` — passes `-p`, reads cost from `--usage-file`, and ends with a
+  contamination probe that fails the experiment unless the backend answers UNKNOWN.
+- `bots.py` CONTEXT — states the bots have no personal-trading knowledge. Necessary
+  because the prompt is the only channel the personas actually read; ADR-012's
+  failure was a decision that existed in `docs/` and nowhere the model would see.
+
+**Verified three ways, not one:**
+
+| check | before | after |
+|---|---|---|
+| `run_001.py` reply | "the MNQ1! futures trading assistant is online" | names the model, no personal facts |
+| cache-write tokens (3-token prompt) | 14,576 | 2,185 |
+| `probe_isolation.py` via `bots.ask_hermes` | leaked MNQ1!, $25k, MGC, 2027 | 3/3 probes `UNKNOWN` |
+
+The token drop is the objective one. The reply wording is a model choice and could
+vary; the injected-context byte count cannot.
+
+`services/discord-bots/probe_isolation.py` is the live end-to-end proof, calling a
+real model through the exact path the personas use. It is NOT in `tests/`: it costs
+money and needs credentials. `tests/test_backend_isolation.py` (9 tests) asserts the
+convention from source text and runs in CI. Both are needed — the source test cannot
+prove the profile is clean, and the live probe cannot run on every commit.
+
+Service restarted; all six personas online, no errors.
+
 **Lesson.** Before scoring a model on groundedness, probe the backend with a question
 the prompt does not answer and demand it say it does not know. An agent harness
 inherits the ambient identity of whatever account runs it, and every fact that
@@ -244,10 +279,10 @@ Assert the negative: a clean backend must be able to say NO CONTEXT AVAILABLE.
 | id | summary | blocking | owner |
 |---|---|---|---|
 | F-003 | look-ahead detection is incidental to the allowlist | backtester unimplemented | Jaedyn |
-| F-005 | backend supplies facts the prompt never gave; profile leak | needs `-p` convention + ADR if a quantforge profile is created | Jaedyn |
-| — | model-layer dimensions unmeasured | **blocked by F-005**, not by the endpoint | both |
+| — | model-layer dimensions unmeasured | needs a model-backed run; **F-005 no longer blocks it** | both |
 
-Closed: F-002 (2026-09-28, hard limits enforced in `risk_engine/policies.py`).
+Closed: F-002 (2026-09-28, hard limits enforced in `risk_engine/policies.py`),
+F-005 (2026-09-28, dedicated `quantforge` profile + explicit `-p`, ADR-013).
 
 ## Standing lessons
 
