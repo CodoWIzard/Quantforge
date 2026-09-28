@@ -52,7 +52,9 @@ Work: add pydantic, implement `packages/strategy_schema/compiler.py`, un-xfail
 - [ ] Create Azure budget + lab resource group
 - [ ] Prove one structured-output model call
 - [ ] Download/collect initial Binance data
-- [ ] Write first 20 evaluation fixtures (5 done)
+- [x] Write first 20 evaluation fixtures — 38 exist (20 B2 ideas + 18 V2 unsafe) plus 9
+      isolation controls; the deterministic harness runs them (`agents/evals/run_lab.py`).
+      NOT yet run against a model — that claim needs Experiment 001.
 
 ## Ownership (§41, suggested)
 - **Developer A — infrastructure lead:** cloud resources, Terraform, agent configs/evals,

@@ -30,7 +30,27 @@ Contracts are frozen; implementation has not started.
 ### Agents (agents/)
 - research-director, strategy-specialist, critic — each with instructions.md,
   tools.json (least-privilege allowlist), output.schema.json, README
-- 5 evaluation fixtures from §18, scoring rubric, harness stub
+- 5 evaluation fixtures from §18 (agent-layer, not yet runnable)
+
+### Evaluation Lab (agents/evals/) — RUNS TODAY, Week 4 card (Jaedyn, 2026-09-28)
+- `rubric.json` — 8 scoring dimensions, machine-readable; `scoring.md` is the prose
+  mirror and a test asserts the two agree
+- `controls.json` — 9 isolation controls, each complete except one property
+- `run_lab.py` — deterministic scorer over the B2/V2 corpora plus the controls.
+  `--json agents/evals/runs` appends a run record. Exit 0 = critical assertions held.
+- `demo_month1.py` — the four-stage demo, exits 0, labels its own seams
+- `RESULTS_LOG_FORMAT.md`, `FAILURE_LOG.md`
+- `tests/test_eval_lab.py` — 23 tests, all passing
+- **Two layers, reported separately.** Deterministic (schema adherence, clarification
+  quality, no-invented-parameter, refusal-for-the-right-reason) runs now. Model layer
+  (tool usage, groundedness, criticism quality, self-review disclosure) is NOT MEASURED —
+  needs a model endpoint. A deterministic pass is not agent coverage.
+- **The 13/13 unsafe-refusal number is not safety evidence** (FAILURE_LOG F-001): every V2
+  fixture is prose, hence under-specified, hence refused for a missing stop loss with the
+  danger never examined. All 13 raise the identical error. The controls carry the evidence.
+- **OPEN, found by this work:** the 2% hard risk limit exists in no code path (F-002).
+  `risk_per_trade_pct: 3.0` with `daily_loss_limit_pct: 10.0` compiles clean. Needs a
+  decision — pydantic `le=2` or `risk_engine/policies.py` — before a fix.
 
 ### Experiment ladder (experiments/)
 - All ten rungs 001–010 scaffolded with build description, exit gate and RESULT.md template
