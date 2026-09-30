@@ -1,6 +1,6 @@
 # QuantForge — current state
 
-Last updated: 2026-09-07
+Last updated: 2026-09-30
 
 ## Phase
 Pre-internship. Repository structure built out from Master Blueprint v2.0.
@@ -31,6 +31,32 @@ Contracts are frozen; implementation has not started.
 - research-director, strategy-specialist, critic — each with instructions.md,
   tools.json (least-privilege allowlist), output.schema.json, README
 - 5 evaluation fixtures from §18 (agent-layer, not yet runnable)
+
+### Week 3 data + tool layer — DONE 2026-09-30
+- `packages/exchange_contracts/binance_symbols.py` — NEW module, read from Binance's
+  own instrument list. Ticks are `Decimal`. **Kraken's BTC tick is 1.0, Binance's is
+  0.10** — a 10x difference, which is why `symbols.py` stays stale and unconverted.
+- `research/data/binance_download.py` — free monthly bulk archive (data.binance.vision),
+  no API key. Only fully-elapsed months; normalises the ms/us `open_time` switch by
+  magnitude; sniffs the optional CSV header.
+- `research/data/candles.py` — reader + validator that REPORTS and never repairs. Gaps,
+  duplicates, out-of-order stamps, impossible OHLC, non-positive values. Missing data
+  raises `DataUnavailableError` rather than returning `[]`.
+- `research/data/indicators.py` — SMA, simple/log returns, sample stdev, annualised
+  volatility (365-day year), volume comparison, max drawdown. `Series` carries its
+  `offset`; insufficient data raises instead of returning a shorter window.
+- `research/data/tools.py` — 5 agent-facing tools, explicit allowlist, JSON-Schema
+  declarations with `additionalProperties: false`, and a `ToolResult` carrying provenance
+  plus a one-line citation. Failures are typed refusals naming the valid set.
+- **The lake holds 336,576 real bars**, BTC/ETH x 1m/5m/15m x 2026-06..08, all verified
+  gap-free. Parquet is gitignored; `research/data/DATASET_PROVENANCE.md` + the downloader
+  are the reproducible artefact.
+- Cross-checked against pandas/numpy computed independently (sma(20) 78801.84, annualised
+  vol 34.26%, volume ratio 0.3798). A tool verified only against itself proves
+  determinism, not correctness.
+- **VENUE CAVEAT:** the Week 3 card says "Kraken OHLCVT" and predates ADR-012, which
+  says Kraken is not a venue for this project. The ADR was followed. Reversing this
+  needs an ADR-014, not a quiet switch.
 
 ### Evaluation Lab (agents/evals/) — RUNS TODAY, Week 4 card (Jaedyn, 2026-09-28)
 - `rubric.json` — 8 scoring dimensions, machine-readable; `scoring.md` is the prose
@@ -101,9 +127,9 @@ Contracts are frozen; implementation has not started.
 - These are **research artifacts** — the corpus and expected behaviour. No model has been
   run against them yet, so Experiment 002's gate is NOT met. The compiler still raises.
 
-### Tests — **584 passed, 34 xfailed, 10 skipped** (verified 2026-09-28)
-- 1 pre-existing failure, unrelated: `test_progress_board.py::
-  test_colour_blurple_while_in_progress`, a hardcoded due date now in the past.
+### Tests — **681 collected, 0 failures, 34 xfailed, 44 skipped** (verified 2026-09-30)
+- Zero known failures. Read counts from `--junitxml`: `pytest -q` prints only progress
+  dots here, so grepping stdout for "passed" silently yields nothing.
 - `test_contracts.py` (14) and `test_agent_contracts.py` — run today, assert the contracts
 - `test_experiment_002_fixtures.py` (56) — locks the B2/B4/V2 corpus
 - `test_repo_facts.py` (9) — bots must describe the repo from disk, never from memory
@@ -143,7 +169,8 @@ instruction drafts for a future hosted-model pipeline which has never been run.
 - No Azure resources provisioned. No Terraform applied. No resource group.
 - No hosted/Foundry-style agent — `agents/` instructions are drafts never run against a
   model. (A working model CALL exists: Experiment 001. The two are different things.)
-- No Binance data downloaded. No collector running. No Parquet lake.
+- No LIVE collector running (Experiment 008). Historical Binance data IS downloaded:
+  336,576 bars in `data/lake/` (gitignored, reproducible). No streaming ingest yet.
 - No PostgreSQL instance, no schema, no migrations
 - **No executable logic in `exchange_contracts`, `backtester` or `validation`** — every
   body still raises NotImplementedError. Two exceptions: `strategy_schema` (B3) and
@@ -165,8 +192,11 @@ instruction drafts for a future hosted-model pipeline which has never been run.
   A wrong tick size silently corrupts every simulated fill.
 
 ## Immediate next action
-Experiment 001 — one model call returning structured output.
-Experiment 002 — strict StrategySpec compiler against the frozen schema.
+Wire `agents/evals/run_evals.py` to the model layer — 4 of 8 rubric dimensions are still
+NOT MEASURED, and `tool_usage` became measurable for the first time now that
+`research/data/tools.py` exists.
+Then Experiment 002 — run the 38-fixture compiler corpus against a model.
+See `agents/evals/MONTH1_CONCLUSION.md` for the ordered Month 2 list.
 
 Do NOT provision Managed Redis (ADR-006). Do NOT build billing.
 Do NOT start the web app before the research loop is proven (§42).

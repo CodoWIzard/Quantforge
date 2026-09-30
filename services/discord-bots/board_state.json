@@ -1,20 +1,21 @@
 {
   "stage": "Stage 1 / Month 1 — Prove the Core Concept",
-  "goal": "Turn vague trading ideas into strict, schema-based StrategySpecs without inventing missing rules.",
+  "goal": "Create repeatable tests for whether the QuantForge prototype is becoming more reliable or worse.",
   "labels": [
     "Prototype",
+    "Evaluation",
     "High Priority",
-    "StrategySpec",
-    "Month 1"
+    "Month 1",
+    "Demo"
   ],
-  "due": "2026-09-08T17:00:00",
-  "week_start": "2026-09-07",
-  "done_when": "10-20 different BTC/ETH trading ideas become valid StrategySpec drafts, or clear clarification questions when rules are missing.",
+  "due": "2026-09-30T17:00:00",
+  "week_start": "2026-09-28",
+  "done_when": "The team can run an evaluation set and score whether changes improve schema adherence, clarification quality, tool usage and criticism quality.",
   "artifacts": [
-    "StrategySpec schema draft",
-    "Compiler prompt/instructions",
-    "Clarification question policy",
-    "10-20 example input/output fixtures"
+    "Evaluation fixture set",
+    "Scoring rubric",
+    "Failure-case log",
+    "Month 1 demo scenario"
   ],
   "sections": [
     {
@@ -23,32 +24,32 @@
         {
           "id": "B1",
           "owner": "Jayden",
-          "done": false,
-          "text": "Define minimum StrategySpec fields: market, timeframe, direction, entry, exit, risk, assumptions"
+          "done": true,
+          "text": "Create evaluation cases for vague strategies, impossible rules, missing risk, misleading inputs and suspiciously good results"
         },
         {
           "id": "B2",
           "owner": "Jaedyn",
           "done": true,
-          "text": "Draft 10-20 realistic BTC/ETH strategy ideas incl. vague and incomplete examples"
+          "text": "Define scoring criteria: asks right questions, avoids hallucination, uses tools correctly, produces structured output"
         },
         {
           "id": "B3",
           "owner": "Jayden",
           "done": true,
-          "text": "Implement/document compiler path: natural language -> strict JSON/Pydantic output"
+          "text": "Add a simple results log format for each evaluation run"
         },
         {
           "id": "B4",
           "owner": "Jaedyn",
           "done": true,
-          "text": "Add clarification rules for missing breakout, volume, exit, timeframe, risk definitions"
+          "text": "Collect failure cases and lessons learned for the future hosted-agent architecture"
         },
         {
           "id": "B5",
           "owner": "Both",
           "done": true,
-          "text": "Confirm invalid/missing values become questions or errors, never invented defaults"
+          "text": "Build one Month 1 demo flow: idea -> StrategySpec -> agent review -> tool-backed output"
         }
       ]
     },
@@ -58,20 +59,20 @@
         {
           "id": "V1",
           "owner": "Jayden",
-          "done": false,
-          "text": "Test same input twice, compare schema consistency"
+          "done": true,
+          "text": "Run the evaluation set before/after one prompt or workflow change"
         },
         {
           "id": "V2",
           "owner": "Jaedyn",
-          "done": true,
-          "text": "Test impossible/unsafe requests, record expected rejection or clarification"
+          "done": false,
+          "text": "Review whether the critic catches weak assumptions and overfit-looking claims"
         },
         {
           "id": "V3",
           "owner": "Both",
           "done": true,
-          "text": "Pick 3 demo examples showing vague idea -> structured StrategySpec"
+          "text": "Write the Month 1 conclusion: what works, what fails, what carries into Month 2"
         }
       ]
     }

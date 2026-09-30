@@ -4,7 +4,15 @@ Derived from blueprint §43 (experimental ladder) and §44 (five-month delivery 
 An experiment is finished when its **exit gate** is demonstrated and recorded in its
 `RESULT.md` — not when the code looks done.
 
-## Now — the two the blueprint names as immediate
+## Now — the model layer, newly unblocked twice over
+
+### Wire `agents/evals/run_evals.py` to the model layer
+4 of 8 rubric dimensions print NOT MEASURED. F-005 (the context leak) no longer blocks it,
+and `tool_usage` became measurable for the first time on 2026-09-30 now that
+`research/data/tools.py` exists. `criticism_quality` is the Week 4 card's last open Verify
+item ("does the critic catch weak assumptions and overfit-looking claims").
+
+## Then — the two the blueprint names as immediate
 
 ### Experiment 001 — Model call — **DONE 2026-09-28, gate MET**
 `experiments/001-model-call/run_001.py` calls one model via the hermes CLI and returns
@@ -53,7 +61,8 @@ Work: add pydantic, implement `packages/strategy_schema/compiler.py`, un-xfail
 - [x] Create StrategySpec schema
 - [ ] Create Azure budget + lab resource group
 - [x] Prove one structured-output model call — Experiment 001, 2026-09-28, exit 0
-- [ ] Download/collect initial Binance data
+- [x] Download initial Binance data — 336,576 bars, BTC/ETH x 1m/5m/15m x 2026-06..08,
+      gap-free, `research/data/DATASET_PROVENANCE.md`. LIVE collection is Experiment 008.
 - [x] Write first 20 evaluation fixtures — 38 exist (20 B2 ideas + 18 V2 unsafe) plus 9
       isolation controls; the deterministic harness runs them (`agents/evals/run_lab.py`).
       NOT yet run against a model. Experiment 001 is now done, so the BLOCKER is gone,

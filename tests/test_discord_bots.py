@@ -175,3 +175,28 @@ def test_tokens_loaded_from_mode_600_file(src: str) -> None:
 def test_output_truncated_below_discord_cap(src: str) -> None:
     m = re.search(r"MAX_DISCORD\s*=\s*(\d+)", src)
     assert m and int(m.group(1)) <= 2000
+
+
+def test_context_tells_the_personas_the_data_tools_exist_and_must_be_cited(src: str):
+    """A capability the CONTEXT does not mention does not exist to the bots.
+
+    The prompt fact blocks read the repository, but CONTEXT is the line that actually
+    steers output — the same gap that had the Director writing "Kraken demo" for weeks
+    while ADR-012 sat on disk. Real market tools landed 2026-09-30; without this the
+    personas would keep saying no market data exists, or worse, estimate a number.
+    """
+    ctx = src
+    for tool in ("describe_market", "moving_average", "realised_volatility",
+                 "volume_spike", "validate_strategy_inputs"):
+        assert tool in ctx, f"CONTEXT never names the {tool} tool"
+    assert "CITE" in ctx, "CONTEXT must require citation, not merely permit tools"
+    assert "BTC-PERP" in ctx and "ETH-PERP" in ctx
+
+
+def test_context_still_forbids_backtest_metrics_after_market_data_arrived(src: str):
+    """The dangerous half of the same change: real candles must not read as licence to
+    quote performance. Data existing and an edge existing are different claims, and the
+    backtester has still never executed."""
+    ctx = src
+    assert "research/backtester/ still raises" in ctx
+    assert "FEES are NOT fetched" in ctx, "a placeholder fee must be labelled as one"

@@ -308,3 +308,26 @@ def test_every_finding_id_in_the_failure_log_is_unique():
     duplicates = [i for i, n in collections.Counter(headings).items() if n > 1]
     assert not duplicates, f"duplicate finding ids in FAILURE_LOG.md: {duplicates}"
     assert headings, "no findings parsed — the heading format changed"
+
+
+def test_month1_conclusion_exists_and_names_its_evidence():
+    """The Week 4 card's last Verify item. A conclusion that quotes no command is an
+    opinion; this asserts the doc points at reproducible evidence and does not claim a
+    performance number the backtester cannot produce."""
+    doc = EVALS / "MONTH1_CONCLUSION.md"
+    assert doc.exists(), "Week 4 card requires a Month 1 conclusion"
+    text = doc.read_text()
+    for cmd in ("run_lab.py", "demo_month1.py", "pytest"):
+        assert cmd in text, f"conclusion cites no way to reproduce {cmd}"
+    for claim in ("what works", "what fails", "Month 2"):
+        assert claim.lower() in text.lower(), f"conclusion is missing '{claim}'"
+    # The load-bearing honesty check: no backtest has run, so no Sharpe may be quoted.
+    assert "no backtest has ever run" in text.lower()
+
+
+def test_the_demo_labels_every_stage_it_fakes():
+    """A demo that papers over an unimplemented stage teaches the audience the system can
+    do something it cannot. Stage 1 is manual and must say so."""
+    text = (EVALS / "demo_month1.py").read_text()
+    assert "MANUAL" in text or "SEAM" in text
+    assert "NotImplementedError" in text  # names why no metrics appear
