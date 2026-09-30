@@ -247,6 +247,7 @@ async def build(
     task: str,
     who: str,
     hermes_bin: str,
+    hermes_profile: str,
     progress=None,
     history: str = "",
 ) -> BuildResult:
@@ -290,6 +291,9 @@ async def build(
             )
             proc = await asyncio.create_subprocess_exec(
                 hermes_bin, "-z", prompt,
+                # -p is LOAD-BEARING: without it the build agent inherits the
+                # host's sticky profile and its personal context. F-005/ADR-013.
+                "-p", hermes_profile,
                 "-t", "file,terminal,code_execution,todo",
                 # --in + --no-restore-cwd are LOAD-BEARING, not tidiness. The
                 # hermes CLI restores the recorded cwd of a previous session on

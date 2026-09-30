@@ -6,10 +6,12 @@ An experiment is finished when its **exit gate** is demonstrated and recorded in
 
 ## Now — the two the blueprint names as immediate
 
-### Experiment 001 — Model call
-Small local Python script calls one hosted LLM and returns structured output.
-**Gate:** reliable authentication, logging and cost visibility.
-Blocked on: a provisioned model endpoint + Key Vault for the key.
+### Experiment 001 — Model call — **DONE 2026-09-28, gate MET**
+`experiments/001-model-call/run_001.py` calls one model via the hermes CLI and returns
+structured JSON. Auth, logging and cost visibility demonstrated; tokens/cost from
+`--usage-file`. Never needed Azure or Key Vault — the local CLI was the endpoint.
+Exposed and fixed F-005 (host-profile context leaking into prompts, ADR-013); the
+script now fails unless the backend can answer UNKNOWN.
 
 ### Experiment 002 — Strategy compiler
 Messy hypothesis → schema-valid StrategySpec; the agent asks for what is missing.
@@ -50,9 +52,13 @@ Work: add pydantic, implement `packages/strategy_schema/compiler.py`, un-xfail
 - [x] Create GitHub repo + context files
 - [x] Create StrategySpec schema
 - [ ] Create Azure budget + lab resource group
-- [ ] Prove one structured-output model call
+- [x] Prove one structured-output model call — Experiment 001, 2026-09-28, exit 0
 - [ ] Download/collect initial Binance data
-- [ ] Write first 20 evaluation fixtures (5 done)
+- [x] Write first 20 evaluation fixtures — 38 exist (20 B2 ideas + 18 V2 unsafe) plus 9
+      isolation controls; the deterministic harness runs them (`agents/evals/run_lab.py`).
+      NOT yet run against a model. Experiment 001 is now done, so the BLOCKER is gone,
+      but the model-layer harness (`run_evals.py`) is still unimplemented — the corpus
+      running against a model remains an unmade claim.
 
 ## Ownership (§41, suggested)
 - **Developer A — infrastructure lead:** cloud resources, Terraform, agent configs/evals,

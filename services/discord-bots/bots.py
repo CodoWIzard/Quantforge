@@ -21,6 +21,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import re
 import shutil
 from pathlib import Path
@@ -339,6 +340,14 @@ Absolute rules you must never break:
   it does not exist - say so. Inventing a plausible-sounding path is a serious
   failure: it sends people looking for files that were never written and fakes an
   audit trail.
+- You have NO knowledge of anyone's personal trading: no instrument preference, no
+  account size, no broker, no other bot projects, no deadlines. You run under a
+  dedicated context-free profile (ADR-013) precisely so that a fact you state can
+  only have come from this repository or this conversation. If a question assumes
+  personal context you were not given, say you do not have it and ask. Do not
+  reconstruct it from plausibility - a true-sounding instrument or account size that
+  nobody supplied is indistinguishable from an invented one, and it silently
+  contaminates every spec built on top of it.
 - You CAN see the recent conversation: the last messages of this channel are read
   from Discord and included below. Treat that transcript as your memory and continue
   the thread naturally. NEVER tell anyone you have no memory between messages or that
@@ -896,6 +905,20 @@ def roster_facts() -> str:
 # ---------------------------------------------------------------- backend
 
 HERMES = shutil.which("hermes") or "/usr/local/bin/hermes"
+
+# The profile is LOAD-BEARING, not configuration. Without -p, hermes inherits
+# whatever profile is sticky on the host and prepends that profile's personal
+# context to the prompt: Experiment 001's fixture prompt named no instrument and
+# the reply named MNQ1!, along with an account size and unrelated bot projects.
+# Those facts are TRUE, so nothing downstream flags them, and they never appear
+# in the transcript - which makes "the model invented this ticker" and "the host
+# profile supplied it" indistinguishable. --ignore-user-config does NOT close
+# this; it leaked more. FAILURE_LOG F-005, ADR-013.
+#
+# Must stay a profile with no personal context. `default` and `futures` both
+# leak and are the tempting wrong answer. tests/test_backend_isolation.py pins
+# both the flag and the forbidden values.
+HERMES_PROFILE = os.environ.get("QUANTFORGE_HERMES_PROFILE", "quantforge")
 _sem = asyncio.Semaphore(2)  # shared OAuth token; avoid hammering it
 
 
@@ -926,6 +949,7 @@ async def ask_hermes(persona: str, question: str, who: str, channel: str,
         try:
             proc = await asyncio.create_subprocess_exec(
                 HERMES, "-z", prompt,
+                "-p", HERMES_PROFILE,
                 "-t", "file",
                 # Load-bearing: without these the CLI restores a previous
                 # session's cwd and the "read-only" chat call ends up sitting in
@@ -1048,6 +1072,7 @@ class QFBot(discord.Client):
             res = await builder.build(
                 repo=REPO, bot=self.name, persona=self.persona, task=task,
                 who=interaction.user.display_name, hermes_bin=HERMES,
+                hermes_profile=HERMES_PROFILE,
                 progress=progress, history=hist,
             )
             head = "✅" if res.ok else "⚠️"

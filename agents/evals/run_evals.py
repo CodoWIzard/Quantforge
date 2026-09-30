@@ -4,6 +4,11 @@
 retries, latency and cost. Without traces you cannot systematically improve reliability,
 so the harness records them even for passing runs.
 
+SUPERSEDED FOR THE DETERMINISTIC LAYER by ``run_lab.py``, which runs today. This module
+remains the MODEL-layer harness and is still unimplemented: it needs a model endpoint
+(Experiment 001, unstarted). Do not wire the two together — the layers are reported
+separately on purpose, because a deterministic pass must never read as agent coverage.
+
 Usage (when implemented)::
 
     python agents/evals/run_evals.py --agent critic --model <deployment> --smoke

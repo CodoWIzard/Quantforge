@@ -5,7 +5,7 @@ callable without network, credentials or a model - so it can be exhaustively tes
 """
 
 from .kill_switch import KillSwitch
-from .policies import HardLimits
+from .policies import HardLimits, LimitBreach
 from .pre_trade import PreTradeCheck, PreTradeResult
 
-__all__ = ["HardLimits", "PreTradeCheck", "PreTradeResult", "KillSwitch"]
+__all__ = ["HardLimits", "LimitBreach", "PreTradeCheck", "PreTradeResult", "KillSwitch"]

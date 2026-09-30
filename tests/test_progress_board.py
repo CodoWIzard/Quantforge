@@ -50,6 +50,14 @@ def test_embed_is_json_serialisable(state: dict) -> None:
 # --- colour coding ------------------------------------------------------
 
 def test_colour_blurple_while_in_progress(state: dict) -> None:
+    """Pin the due date into the future.
+
+    Colour precedence is complete > overdue > in-progress, so a board whose real due
+    date has passed renders overdue-pink and this test fails with the calendar rather
+    than with a code change. Its sibling below already pins a PAST date for the same
+    reason; a test that reads a real deadline is only correct until that deadline.
+    """
+    state["due"] = "2099-01-01T00:00:00"
     for i in pb.all_items(state):
         i["done"] = False
     assert pb.build_embed(state)["color"] == pb.COLOR_PROGRESS
