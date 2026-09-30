@@ -25,8 +25,11 @@ node_modules/
 .turbo/
 *.tsbuildinfo
 
-# Data — market history belongs in Blob, not git
-data/
+# Data — market history belongs in Blob, not git.
+# ANCHORED with a leading slash on purpose: a bare `data/` is unanchored and matches
+# a directory named data at ANY depth, so it silently swallowed research/data/ — the
+# whole Week 3 tool layer staged as nothing and `git commit` reported success.
+/data/
 *.parquet
 *.csv
 *.db
