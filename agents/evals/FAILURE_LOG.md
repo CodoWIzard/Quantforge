@@ -154,7 +154,7 @@ place an order.** That is architecture, not a control.
 
 ---
 
-## F-005 — Feeding prose to a structured validator makes everything fail identically
+## F-006 — Feeding prose to a structured validator makes everything fail identically
 
 **Severity:** medium
 **Status:** resolved — reported as NOT MEASURABLE, not as a failure

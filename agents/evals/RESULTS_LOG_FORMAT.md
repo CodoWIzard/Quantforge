@@ -39,7 +39,7 @@ commit, the rubric version and the control-set version are all recorded. A bare
 | `results.single_reason_for_every_refusal` | bool | true = refusals are explained by one shared cause; the corpus is not discriminating |
 | `critical_failures` | list | `{id, dimension, detail}` — merge-blocking |
 | `known_gaps` | list | same shape; demonstrated defects already logged in FAILURE_LOG.md, not blocking |
-| `not_measurable` | list | scored cases where the *test setup* cannot measure the property (see F-005) |
+| `not_measurable` | list | scored cases where the *test setup* cannot measure the property (see F-006) |
 | `verdict` | `PASS` \| `FAIL` | PASS means zero critical failures, nothing more |
 | `elapsed_s` | float | |
 | `honest_scope` | string | prose statement of what the run did NOT exercise |

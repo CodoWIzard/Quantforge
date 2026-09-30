@@ -8,7 +8,9 @@ No model, no network, no credentials — these run in CI.
 
 from __future__ import annotations
 
+import collections
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -291,3 +293,18 @@ def test_scoring_prose_and_rubric_json_agree():
     prose = (EVALS / "scoring.md").read_text()
     for d in RUBRIC["dimensions"]:
         assert d["id"] in prose, f"{d['id']} is in rubric.json but not scoring.md"
+
+
+def test_every_finding_id_in_the_failure_log_is_unique():
+    """Two findings sharing an ID makes every cross-reference ambiguous.
+
+    F-005 was assigned twice (a prose-into-validator gap and the backend context
+    leak). Code, ADRs, CURRENT_STATE and the bots' prompt fact blocks all cite
+    these IDs by string, so a duplicate silently points readers at the wrong
+    finding — and the wrong severity.
+    """
+    log = (EVALS / "FAILURE_LOG.md").read_text()
+    headings = re.findall(r"^## (F-\d+)\b", log, re.MULTILINE)
+    duplicates = [i for i, n in collections.Counter(headings).items() if n > 1]
+    assert not duplicates, f"duplicate finding ids in FAILURE_LOG.md: {duplicates}"
+    assert headings, "no findings parsed — the heading format changed"
